@@ -69,10 +69,24 @@ fun CalendarWidget(races: List<Race>) {
                         val isCurrentMonth = date.month == currentMonth.month && date.year == currentMonth.year
                         val isToday = date == LocalDate.now()
                         val hasEvent = races.any { try { Instant.parse(it.date).atZone(ZoneId.systemDefault()).toLocalDate() == date } catch(e: Exception) { false } }
-                        Box(modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp).clip(RoundedCornerShape(8.dp)).background(if (isToday) CyberCyan.copy(alpha = 0.15f) else if (hasEvent) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.02f)).border(1.dp, if (isToday) CyberCyan else if (hasEvent) CyberCyan.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.05f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(date.dayOfMonth.toString(), color = if (isToday) CyberCyan else if (hasEvent) Color.White else if (!isCurrentMonth) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = if (isToday || hasEvent) FontWeight.Black else FontWeight.Bold)
-                                if (hasEvent) { Spacer(modifier = Modifier.height(2.dp)); Box(modifier = Modifier.size(4.dp).background(CyberCyan, CircleShape)) }
+                        HyperGlassCard(
+                            modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp),
+                            onClick = { },
+                            variant = "glass",
+                            cornerRadius = 8,
+                            borderColor = if (isToday) CyberCyan else if (hasEvent) CyberCyan.copy(alpha = 0.4f) else Color.White,
+                            borderAlpha = if (isToday) 0.8f else if (hasEvent) 0.3f else 0.05f
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(if (isToday) CyberCyan.copy(alpha = 0.15f) else if (hasEvent) Color.White.copy(alpha = 0.08f) else Color.Transparent),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(date.dayOfMonth.toString(), color = if (isToday) CyberCyan else if (hasEvent) Color.White else if (!isCurrentMonth) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = if (isToday || hasEvent) FontWeight.Black else FontWeight.Bold)
+                                    if (hasEvent) { Spacer(modifier = Modifier.height(2.dp)); Box(modifier = Modifier.size(4.dp).background(CyberCyan, CircleShape)) }
+                                }
                             }
                         }
                     }

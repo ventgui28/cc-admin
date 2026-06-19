@@ -764,53 +764,34 @@ fun RaceFormDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (currentStep > 1) {
-                        Button(
+                        PremiumButton(
+                            text = "VOLTAR",
                             onClick = { currentStep-- },
-                            modifier = Modifier.height(50.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White.copy(alpha = 0.1f),
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Text("VOLTAR", fontWeight = FontWeight.Bold)
-                        }
+                            variant = "secondary"
+                        )
                     } else {
-                        TextButton(
+                        PremiumButton(
+                            text = stringResource(R.string.common_cancel),
                             onClick = onDismiss,
-                            modifier = Modifier.height(50.dp),
-                            enabled = !isSaving
-                        ) {
-                            Text(
-                                text = stringResource(R.string.common_cancel).uppercase(),
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                            variant = "outline"
+                        )
                     }
                     
                     Spacer(modifier = Modifier.width(12.dp))
 
                     if (currentStep < 4) {
-                        Button(
+                        PremiumButton(
+                            text = "SEGUINTE",
                             onClick = { currentStep++ },
-                            modifier = Modifier
-                                .height(50.dp)
-                                .weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = CyberCyan,
-                                contentColor = MidnightBlue
-                            ),
-                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f),
                             enabled = when (currentStep) {
                                 1 -> title.isNotBlank() && date.isNotBlank()
                                 else -> true
                             }
-                        ) {
-                            Text("SEGUINTE", fontWeight = FontWeight.ExtraBold)
-                        }
+                        )
                     } else {
-                        Button(
+                        PremiumButton(
+                            text = stringResource(R.string.races_save_race),
                             onClick = {
                                 scope.launch {
                                     isSaving = true
@@ -825,29 +806,9 @@ fun RaceFormDialog(
                                     if (!success) isSaving = false
                                 }
                             },
-                            modifier = Modifier
-                                .height(54.dp)
-                                .weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = CyberCyan,
-                                contentColor = MidnightBlue
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            enabled = !isSaving
-                        ) {
-                            if (isSaving) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = MidnightBlue,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text(
-                                    text = stringResource(R.string.races_save_race).uppercase(),
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
-                        }
+                            modifier = Modifier.weight(1f),
+                            isLoading = isSaving
+                        )
                     }
                 }
             }

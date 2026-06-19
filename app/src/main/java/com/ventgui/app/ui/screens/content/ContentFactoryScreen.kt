@@ -324,19 +324,24 @@ fun ScrollableRow(content: @Composable () -> Unit) {
 
 @Composable
 fun SelectableChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) CyberCyan else Color.White.copy(alpha = 0.05f))
-            .border(1.dp, if (isSelected) CyberCyan else Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 20.dp, vertical = 12.dp)
+    HyperGlassCard(
+        onClick = onClick,
+        variant = if (isSelected) "solid" else "glass",
+        cornerRadius = 12,
+        borderColor = if (isSelected) CyberCyan else Color.White,
+        borderAlpha = if (isSelected) 0.8f else 0.1f
     ) {
-        Text(
-            text = text,
-            color = if (isSelected) MidnightBlue else Color.White.copy(alpha = 0.6f),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Box(
+            modifier = Modifier
+                .background(if (isSelected) CyberCyan else Color.Transparent)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = text,
+                color = if (isSelected) MidnightBlue else Color.White.copy(alpha = 0.6f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }

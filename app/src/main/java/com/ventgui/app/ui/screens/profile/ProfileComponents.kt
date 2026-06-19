@@ -119,7 +119,12 @@ fun MFASetupDialog(onDismiss: () -> Unit, onEnroll: () -> Unit, secret: String?,
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_cancel), color = Color.White.copy(alpha = 0.5f)) }
+                    PremiumButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismiss,
+                        variant = "outline",
+                        modifier = Modifier.weight(1f)
+                    )
                     PremiumButton(
                         text = stringResource(R.string.profile_dialog_mfa_verify), 
                         onClick = { onVerify(code) }, 
@@ -147,7 +152,12 @@ fun EditProfileDialog(profile: Profile?, onDismiss: () -> Unit, onSave: (String,
                 PremiumTextField(value = phone, onValueChange = { phone = it }, label = stringResource(R.string.profile_dialog_edit_phone), placeholder = stringResource(R.string.profile_dialog_edit_phone_placeholder))
                 Spacer(modifier = Modifier.height(32.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_cancel), color = Color.White.copy(alpha = 0.5f)) }
+                    PremiumButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismiss,
+                        variant = "outline",
+                        modifier = Modifier.weight(1f)
+                    )
                     PremiumButton(text = stringResource(R.string.common_save), onClick = { onSave(name, phone) }, modifier = Modifier.weight(1.5f))
                 }
             }
@@ -202,7 +212,12 @@ fun ChangePasswordDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
                 PremiumTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, label = stringResource(R.string.profile_dialog_pwd_confirm), placeholder = "••••••••", isPassword = true)
                 Spacer(modifier = Modifier.height(32.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.common_cancel), color = Color.White.copy(alpha = 0.5f)) }
+                    PremiumButton(
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismiss,
+                        variant = "outline",
+                        modifier = Modifier.weight(1f)
+                    )
                     PremiumButton(
                         text = stringResource(R.string.profile_dialog_pwd_update), 
                         onClick = { if (passwordsMatch && isPasswordValid) onSave(password) }, 

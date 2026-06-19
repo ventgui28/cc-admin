@@ -354,8 +354,9 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     // --- LOGOUT BUTTON ---
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().height(64.dp).clickable {
+                    HyperGlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
                             scope.launch {
                                 try { 
                                     UserLogger.log("Terminou sessão")
@@ -364,11 +365,14 @@ fun ProfileScreen(
                                 onLogout()
                             }
                         },
-                        color = Color.Transparent,
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFFF5252).copy(alpha = 0.3f))
+                        borderColor = Color(0xFFFF5252),
+                        borderAlpha = 0.3f,
+                        cornerRadius = 16
                     ) {
-                        Row(modifier = Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(Icons.Rounded.Logout, null, tint = Color(0xFFFF5252))
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {

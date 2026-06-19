@@ -54,19 +54,14 @@ fun GalleryGridView(
         gridItemsIndexed(posts) { index, post ->
             val isSelected = selectedIds.contains(post.id)
             StaggeredFadeInItem(index = index) {
-                Box(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .border(
-                            width = if (isSelected) 3.dp else 1.dp,
-                            color = if (isSelected) CyberCyan else Color.White.copy(alpha = 0.05f),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .combinedClickable(
-                            onClick = { onClick(post) },
-                            onLongClick = { onLongClick(post.id!!) }
-                        )
+                HyperGlassCard(
+                    modifier = Modifier.aspectRatio(1f),
+                    onClick = { onClick(post) },
+                    onLongClick = { onLongClick(post.id!!) },
+                    variant = "glass",
+                    cornerRadius = 16,
+                    borderColor = if (isSelected) CyberCyan else Color.White,
+                    borderAlpha = if (isSelected) 0.8f else 0.05f
                 ) {
                     AsyncImage(
                         model = post.image_url,

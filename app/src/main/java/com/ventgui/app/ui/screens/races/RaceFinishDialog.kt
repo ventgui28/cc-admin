@@ -247,19 +247,15 @@ fun RaceFinishDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(
+                    PremiumButton(
+                        text = "CANCELAR",
                         onClick = onDismiss,
-                        modifier = Modifier.height(50.dp).weight(1f)
-                    ) {
-                        Text(
-                            "CANCELAR",
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1
-                        )
-                    }
+                        variant = "outline",
+                        modifier = Modifier.weight(1f)
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Button(
+                    PremiumButton(
+                        text = "CONCLUIR",
                         onClick = {
                             val updatedList = results.map { (res, athlete) ->
                                 val input = inputs[athlete.id!!] ?: Triple("", "", "Normal")
@@ -278,22 +274,8 @@ fun RaceFinishDialog(
                             }
                             onSave(updatedList)
                         },
-                        modifier = Modifier
-                            .height(50.dp)
-                            .weight(1.2f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CyberCyan,
-                            contentColor = MidnightBlue
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text(
-                            "CONCLUIR",
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 13.sp,
-                            maxLines = 1
-                        )
-                    }
+                        modifier = Modifier.weight(1.2f)
+                    )
                 }
             }
         }
