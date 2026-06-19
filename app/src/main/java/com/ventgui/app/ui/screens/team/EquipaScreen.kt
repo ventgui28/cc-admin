@@ -191,7 +191,7 @@ fun EquipaScreen(
                                 }
                                 
                                 val availableCategories = remember(athletes) {
-                                    (listOf("Escolas", "Cadetes") + athletes.map { it.category }).distinct().filter { it.isNotBlank() }
+                                    athletes.map { it.category }.distinct().filter { it.isNotBlank() }
                                 }
 
                                 DropdownMenu(
@@ -230,7 +230,8 @@ fun EquipaScreen(
                                         val filterLabel = when (statusFilter) {
                                             "active" -> stringResource(R.string.team_status_active)
                                             "injured" -> stringResource(R.string.team_status_injured)
-                                            else -> "ESTADO"
+                                            null -> "ESTADO"
+                                            else -> statusFilter!!.uppercase()
                                         }
                                         Text(filterLabel.uppercase(), color = if (statusFilter != null) MidnightBlue else Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -238,14 +239,24 @@ fun EquipaScreen(
                                     }
                                 }
                                 
+                                val availableStatuses = remember(athletes) {
+                                    athletes.map { it.status }.distinct().filter { it.isNotBlank() }
+                                }
+
                                 DropdownMenu(
                                     expanded = statusMenuExpanded,
                                     onDismissRequest = { statusMenuExpanded = false },
                                     modifier = Modifier.background(MidnightBlue).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                                 ) {
                                     DropdownMenuItem(text = { Text("TODOS OS ESTADOS", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { statusFilter = null; statusMenuExpanded = false })
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.team_status_active).uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { statusFilter = "active"; statusMenuExpanded = false })
-                                    DropdownMenuItem(text = { Text(stringResource(R.string.team_status_injured).uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { statusFilter = "injured"; statusMenuExpanded = false })
+                                    availableStatuses.forEach { statusVal ->
+                                        val statusLabel = when (statusVal) {
+                                            "active" -> stringResource(R.string.team_status_active)
+                                            "injured" -> stringResource(R.string.team_status_injured)
+                                            else -> statusVal.uppercase()
+                                        }
+                                        DropdownMenuItem(text = { Text(statusLabel.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { statusFilter = statusVal; statusMenuExpanded = false })
+                                    }
                                 }
                             }
                         }

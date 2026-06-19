@@ -108,6 +108,23 @@ fun ProvasScreen(
     
     val isInSelectionMode = selectedRaces.isNotEmpty()
 
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var categoryFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var statusFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var genderFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
+
+    val filteredRaces = remember(races, searchQuery, categoryFilter, statusFilter, genderFilter) {
+        races.filter { race ->
+            val matchesSearch = race.title.contains(searchQuery, ignoreCase = true) ||
+                    (race.location?.contains(searchQuery, ignoreCase = true) ?: false)
+            val matchesCategory = categoryFilter == null || race.category.split(", ").any { it.equals(categoryFilter, ignoreCase = true) }
+            val matchesStatus = statusFilter == null || race.status.equals(statusFilter, ignoreCase = true)
+            val matchesGender = genderFilter == null || (race.gender != null && race.gender.contains(genderFilter!!, ignoreCase = true))
+            matchesSearch && matchesCategory && matchesStatus && matchesGender
+        }
+    }
+
     // Helper to parse date flexibly
     fun parseFlexibleDate(dateStr: String): Instant? {
         if (dateStr.isBlank()) return null
@@ -214,9 +231,186 @@ fun ProvasScreen(
                         )
                     } else {
                         // --- GLOBAL VIEW HEADER ---
-                        Column {
-                            Text("Calendário", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Black)
-                            Text("Acompanha o desempenho da equipa em todas as provas.", color = CyberCyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().height(64.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                AnimatedContent(
+                                    targetState = isSearchExpanded,
+                                    transitionSpec = {
+                                        (fadeIn() + expandHorizontally()).togetherWith(fadeOut() + shrinkHorizontally())
+                                    },
+                                    label = "HeaderTransition"
+                                ) { expanded ->
+                                    if (expanded) {
+                                        PremiumTextField(
+                                            value = searchQuery,
+                                            onValueChange = { searchQuery = it },
+                                            label = null,
+                                            placeholder = "Pesquisar provas...",
+                                            modifier = Modifier.fillMaxWidth().padding(end = 12.dp),
+                                            leadingIcon = Icons.Rounded.Search
+                                        )
+                                    } else {
+                                        Column {
+                                            Text("Calendário", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black)
+                                            Text("Acompanha o desempenho da equipa.", color = CyberCyan, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.horizontalScroll(rememberScrollState())
+                            ) {
+                                IconButton(
+                                    onClick = { 
+                                        isSearchExpanded = !isSearchExpanded
+                                        if (!isSearchExpanded) searchQuery = ""
+                                    },
+                                    modifier = Modifier.size(32.dp).background(if (isSearchExpanded) CyberCyan.copy(alpha = 0.1f) else Color.White.copy(alpha = 0.05f), CircleShape).border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                                ) {
+                                    Icon(if (isSearchExpanded) Icons.Rounded.Close else Icons.Rounded.Search, null, tint = if (isSearchExpanded) CyberCyan else Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                                }
+                                
+                                if (!isSearchExpanded) {
+                                    // Category Filter
+                                    var catMenuExpanded by remember { mutableStateOf(false) }
+                                    val catInteractionSource = remember { MutableInteractionSource() }
+                                    val isCatPressed by catInteractionSource.collectIsPressedAsState()
+                                    val catScale by animateFloatAsState(if (isCatPressed) 0.92f else 1f, label = "catScale")
+
+                                    Box {
+                                        Surface(
+                                            modifier = Modifier
+                                                .height(36.dp)
+                                                .graphicsLayer {
+                                                    scaleX = catScale
+                                                    scaleY = catScale
+                                                },
+                                            color = if (categoryFilter != null) CyberCyan else Color.White.copy(alpha = 0.05f),
+                                            shape = RoundedCornerShape(18.dp),
+                                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                                            interactionSource = catInteractionSource,
+                                            onClick = { catMenuExpanded = true }
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp)) {
+                                                val filterLabel = categoryFilter ?: "MODALIDADE"
+                                                Text(filterLabel.uppercase(), color = if (categoryFilter != null) MidnightBlue else Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Icon(Icons.Rounded.Tune, null, tint = if (categoryFilter != null) MidnightBlue else Color.White, modifier = Modifier.size(12.dp))
+                                            }
+                                        }
+                                        
+                                        val availableCategories = remember(races) {
+                                            races.map { it.category }.flatMap { it.split(", ") }.distinct().filter { it.isNotBlank() }
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = catMenuExpanded,
+                                            onDismissRequest = { catMenuExpanded = false },
+                                            modifier = Modifier.background(MidnightBlue).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                        ) {
+                                            DropdownMenuItem(text = { Text("TODAS AS MODALIDADES", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { categoryFilter = null; catMenuExpanded = false })
+                                            availableCategories.forEach { catName ->
+                                                DropdownMenuItem(text = { Text(catName.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { categoryFilter = catName; catMenuExpanded = false })
+                                            }
+                                        }
+                                    }
+
+                                    // Status Filter
+                                    var statusMenuExpanded by remember { mutableStateOf(false) }
+                                    val statusInteractionSource = remember { MutableInteractionSource() }
+                                    val isStatusPressed by statusInteractionSource.collectIsPressedAsState()
+                                    val statusScale by animateFloatAsState(if (isStatusPressed) 0.92f else 1f, label = "statusScale")
+
+                                    Box {
+                                        Surface(
+                                            modifier = Modifier
+                                                .height(36.dp)
+                                                .graphicsLayer {
+                                                    scaleX = statusScale
+                                                    scaleY = statusScale
+                                                },
+                                            color = if (statusFilter != null) CyberCyan else Color.White.copy(alpha = 0.05f),
+                                            shape = RoundedCornerShape(18.dp),
+                                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                                            interactionSource = statusInteractionSource,
+                                            onClick = { statusMenuExpanded = true }
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp)) {
+                                                val filterLabel = statusFilter ?: "ESTADO"
+                                                Text(filterLabel.uppercase(), color = if (statusFilter != null) MidnightBlue else Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Icon(Icons.Rounded.Tune, null, tint = if (statusFilter != null) MidnightBlue else Color.White, modifier = Modifier.size(12.dp))
+                                            }
+                                        }
+                                        
+                                        val availableStatuses = remember(races) {
+                                            races.map { it.status }.distinct().filter { it.isNotBlank() }
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = statusMenuExpanded,
+                                            onDismissRequest = { statusMenuExpanded = false },
+                                            modifier = Modifier.background(MidnightBlue).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                        ) {
+                                            DropdownMenuItem(text = { Text("TODOS OS ESTADOS", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { statusFilter = null; statusMenuExpanded = false })
+                                            availableStatuses.forEach { statusVal ->
+                                                DropdownMenuItem(text = { Text(statusVal.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { statusFilter = statusVal; statusMenuExpanded = false })
+                                            }
+                                        }
+                                    }
+
+                                    // Gender Filter
+                                    var genderMenuExpanded by remember { mutableStateOf(false) }
+                                    val genderInteractionSource = remember { MutableInteractionSource() }
+                                    val isGenderPressed by genderInteractionSource.collectIsPressedAsState()
+                                    val genderScale by animateFloatAsState(if (isGenderPressed) 0.92f else 1f, label = "genderScale")
+
+                                    Box {
+                                        Surface(
+                                            modifier = Modifier
+                                                .height(36.dp)
+                                                .graphicsLayer {
+                                                    scaleX = genderScale
+                                                    scaleY = genderScale
+                                                },
+                                            color = if (genderFilter != null) CyberCyan else Color.White.copy(alpha = 0.05f),
+                                            shape = RoundedCornerShape(18.dp),
+                                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                                            interactionSource = genderInteractionSource,
+                                            onClick = { genderMenuExpanded = true }
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp)) {
+                                                val filterLabel = genderFilter ?: "GÉNERO"
+                                                Text(filterLabel.uppercase(), color = if (genderFilter != null) MidnightBlue else Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Icon(Icons.Rounded.Tune, null, tint = if (genderFilter != null) MidnightBlue else Color.White, modifier = Modifier.size(12.dp))
+                                            }
+                                        }
+                                        
+                                        val availableGenders = remember(races) {
+                                            races.mapNotNull { it.gender }.distinct().filter { it.isNotBlank() }
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = genderMenuExpanded,
+                                            onDismissRequest = { genderMenuExpanded = false },
+                                            modifier = Modifier.background(MidnightBlue).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                        ) {
+                                            DropdownMenuItem(text = { Text("TODOS OS GÉNEROS", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { genderFilter = null; genderMenuExpanded = false })
+                                            availableGenders.forEach { genderVal ->
+                                                DropdownMenuItem(text = { Text(genderVal.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }, onClick = { genderFilter = genderVal; genderMenuExpanded = false })
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -232,25 +426,34 @@ fun ProvasScreen(
                         Text(stringResource(R.string.races_upcoming_races), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black)
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        races.forEach { race ->
-                            RaceListCard(
-                                race = race,
-                                onClick = { selectedRace = race },
-                                onEditClick = {
-                                    editingRace = race
-                                    initialFormStep = 1
-                                    showFormDialog = true
-                                },
-                                onDeleteClick = {
-                                    raceToDelete = race
-                                },
-                                onAssociateAthleteClick = {
-                                    editingRace = race
-                                    initialFormStep = 3
-                                    showFormDialog = true
-                                }
+                        if (filteredRaces.isEmpty()) {
+                            Text(
+                                text = "Nenhuma prova corresponde aos filtros selecionados.",
+                                color = Color.White.copy(alpha = 0.4f),
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(vertical = 24.dp)
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
+                        } else {
+                            filteredRaces.forEach { race ->
+                                RaceListCard(
+                                    race = race,
+                                    onClick = { selectedRace = race },
+                                    onEditClick = {
+                                        editingRace = race
+                                        initialFormStep = 1
+                                        showFormDialog = true
+                                    },
+                                    onDeleteClick = {
+                                        raceToDelete = race
+                                    },
+                                    onAssociateAthleteClick = {
+                                        editingRace = race
+                                        initialFormStep = 3
+                                        showFormDialog = true
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
                         }
                     }
                 }
