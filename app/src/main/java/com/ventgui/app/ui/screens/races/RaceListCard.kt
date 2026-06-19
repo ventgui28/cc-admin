@@ -40,10 +40,9 @@ fun RaceListCard(
 
     Box {
         HyperGlassCard(
-            modifier = Modifier.fillMaxWidth().combinedClickable(
-                onClick = onClick, 
-                onLongClick = { showMenu = true }
-            ),
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onClick,
+            onLongClick = { showMenu = true },
             borderColor = null,
             borderAlpha = 0.15f
         ) {

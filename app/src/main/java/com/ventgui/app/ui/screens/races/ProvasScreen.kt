@@ -501,21 +501,34 @@ fun ProvasScreen(
         if (raceToDelete != null) {
             AlertDialog(
                 onDismissRequest = { raceToDelete = null; selectedRaces = emptySet() },
-                containerColor = Color(0xFF001A33),
-                title = { Text("Eliminar Prova?", color = Color.White) },
+                shape = RoundedCornerShape(24.dp),
+                containerColor = MidnightBlue,
+                modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp)),
+                title = { Text("Eliminar Prova?", color = Color.White, fontWeight = FontWeight.Black) },
                 text = { Text("Tens a certeza que pretendes eliminar esta prova? Esta ação é irreversível.", color = Color.White.copy(alpha = 0.7f)) },
                 confirmButton = {
-                    Button(onClick = {
-                        viewModel.deleteRace(raceToDelete!!) { success ->
-                            if (success) {
-                                selectedRaces = emptySet()
-                                raceToDelete = null
-                                selectedRace = null
+                    PremiumButton(
+                        text = "ELIMINAR",
+                        onClick = {
+                            viewModel.deleteRace(raceToDelete!!) { success ->
+                                if (success) {
+                                    selectedRaces = emptySet()
+                                    raceToDelete = null
+                                    selectedRace = null
+                                }
                             }
-                        }
-                    }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252))) { Text("ELIMINAR", fontWeight = FontWeight.Bold) }
+                        },
+                        containerColor = Color(0xFFFF5252),
+                        contentColor = Color.White
+                    )
                 },
-                dismissButton = { TextButton(onClick = { raceToDelete = null; selectedRaces = emptySet() }) { Text("CANCELAR", color = Color.White.copy(alpha = 0.6f)) } }
+                dismissButton = {
+                    PremiumButton(
+                        text = "CANCELAR",
+                        onClick = { raceToDelete = null; selectedRaces = emptySet() },
+                        variant = "outline"
+                    )
+                }
             )
         }
 

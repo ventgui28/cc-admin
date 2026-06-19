@@ -83,31 +83,12 @@ fun SponsorsScreen(
             
             // --- HEADER ---
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = onOpenDrawer,
-                        modifier = Modifier.size(44.dp).background(Color.White.copy(alpha = 0.05f), CircleShape).border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                    ) { Icon(Icons.Rounded.Menu, null, tint = Color.White) }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(36.dp).background(Color.White, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                            Text("C", color = MidnightBlue, fontWeight = FontWeight.Black, fontSize = 22.sp)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("CANTANHEDE", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                            Text("CYCLING HUB", color = CyberCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        }
-                    }
-
-                    Box(contentAlignment = Alignment.TopEnd) {
-                        IconButton(
-                            onClick = { },
-                            modifier = Modifier.size(44.dp).background(Color.White.copy(alpha = 0.05f), CircleShape).border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                        ) { Icon(Icons.Rounded.NotificationsNone, null, tint = Color.White) }
-                        Box(modifier = Modifier.padding(4.dp).size(10.dp).background(CyberCyan, CircleShape).border(2.dp, MidnightBlue, CircleShape))
-                    }
-                }
+                PremiumTopBar(
+                    onLeftClick = onOpenDrawer,
+                    onRightClick = { },
+                    rightIcon = Icons.Rounded.Notifications,
+                    hasRightBadge = true
+                )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -171,14 +152,13 @@ fun SponsorsScreen(
                     item {
                         Spacer(modifier = Modifier.height(32.dp))
                         BecomePartnerCard()
-                        Spacer(modifier = Modifier.height(120.dp))
                     }
                 }
             }
         }
-        }
+    }
 
-        // Selection Action Bar
+    // Selection Action Bar
         AnimatedVisibility(
             visible = isInSelectionMode,
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -226,16 +206,12 @@ fun SponsorsScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SponsorGridItem(sponsor: Sponsor, isSelected: Boolean, onClick: (String) -> Unit, onLongClick: (String) -> Unit) {
     HyperGlassCard(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .combinedClickable(
-                onClick = { onClick(sponsor.id!!) },
-                onLongClick = { onLongClick(sponsor.id!!) }
-            ),
+        modifier = Modifier.aspectRatio(1f),
+        onClick = { onClick(sponsor.id!!) },
+        onLongClick = { onLongClick(sponsor.id!!) },
         borderAlpha = if (isSelected) 0.8f else 0.1f,
         borderColor = if (isSelected) CyberCyan else Color.White
     ) {
@@ -257,7 +233,8 @@ fun SponsorGridItem(sponsor: Sponsor, isSelected: Boolean, onClick: (String) -> 
 @Composable
 fun BecomePartnerCard() {
     HyperGlassCard(
-        modifier = Modifier.fillMaxWidth().height(100.dp).clickable { },
+        modifier = Modifier.fillMaxWidth().height(100.dp),
+        onClick = { }
     ) {
         Row(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(48.dp).background(CyberCyan.copy(alpha = 0.1f), CircleShape).border(1.dp, CyberCyan.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) {

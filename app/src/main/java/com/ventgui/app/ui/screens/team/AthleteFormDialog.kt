@@ -240,9 +240,14 @@ fun AthleteFormDialog(athlete: Athlete?, onDismiss: () -> Unit, onSave: (Athlete
                 
                 Spacer(modifier = Modifier.height(40.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f).height(56.dp)) { Text(stringResource(R.string.common_cancel).uppercase(), color = Color.White.copy(alpha = 0.5f), fontWeight = FontWeight.Black) }
                     PremiumButton(
-                        text = stringResource(R.string.common_save).uppercase(),
+                        text = stringResource(R.string.common_cancel),
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        variant = "outline"
+                    )
+                    PremiumButton(
+                        text = stringResource(R.string.common_save),
                         onClick = { 
                             onSave(Athlete(
                                 id = athlete?.id,
@@ -255,8 +260,8 @@ fun AthleteFormDialog(athlete: Athlete?, onDismiss: () -> Unit, onSave: (Athlete
                                 phone = if (phone.isBlank()) null else phone
                             ))
                         },
-                        modifier = Modifier.weight(1.5f),
-                        containerColor = if (name.isNotBlank()) CyberCyan else Color.White.copy(alpha = 0.1f)
+                        enabled = name.isNotBlank(),
+                        modifier = Modifier.weight(1.5f)
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))

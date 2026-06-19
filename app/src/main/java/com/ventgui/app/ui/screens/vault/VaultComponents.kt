@@ -46,8 +46,9 @@ fun VaultTextCard(
     var expanded by rememberSaveable { mutableStateOf(false) }
 
     HyperGlassCard(
-        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
-        color = CyberCyan
+        modifier = Modifier.fillMaxWidth(),
+        color = CyberCyan,
+        onClick = { expanded = !expanded }
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -301,55 +302,21 @@ fun AddVaultTextDialog(onDismiss: () -> Unit, onSave: (String, String) -> Unit) 
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
+                        PremiumButton(
+                            text = stringResource(R.string.common_cancel),
                             onClick = onDismiss,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color.White.copy(alpha = 0.15f)
-                            )
-                        ) {
-                            Text(
-                                stringResource(R.string.common_cancel).uppercase(),
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                            modifier = Modifier.weight(1f),
+                            variant = "outline"
+                        )
 
-                        Button(
+                        PremiumButton(
+                            text = stringResource(R.string.common_save),
                             onClick = { if (canSave) onSave(title, content) },
                             enabled = canSave,
-                            modifier = Modifier
-                                .weight(1.5f)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = CyberCyan,
-                                disabledContainerColor = CyberCyan.copy(alpha = 0.25f)
-                            )
-                        ) {
-                            Icon(
-                                Icons.Rounded.Save,
-                                null,
-                                tint = if (canSave) MidnightBlue else Color.White.copy(alpha = 0.3f),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                stringResource(R.string.common_save).uppercase(),
-                                color = if (canSave) MidnightBlue else Color.White.copy(alpha = 0.3f),
-                                fontWeight = FontWeight.Black,
-                                fontSize = 13.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
+                            modifier = Modifier.weight(1.5f),
+                            icon = Icons.Rounded.Save,
+                            variant = "primary"
+                        )
                     }
                 }
             }
@@ -512,25 +479,17 @@ fun VaultPasswordDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
+                        PremiumButton(
+                            text = "CANCELAR",
                             onClick = { if (!isLoading) onDismiss() },
-                            modifier = Modifier.weight(1f).height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp, Color.White.copy(alpha = 0.15f)
-                            )
-                        ) {
-                            Text(
-                                "CANCELAR",
-                                color = Color.White.copy(alpha = 0.6f),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
+                            modifier = Modifier.weight(1f),
+                            variant = "outline"
+                        )
 
-                        Button(
+                        PremiumButton(
+                            text = "ENTRAR",
                             onClick = {
-                                if (password.isBlank() || isLoading) return@Button
+                                if (password.isBlank() || isLoading) return@PremiumButton
                                 scope.launch {
                                     isLoading = true
                                     errorMsg = ""
@@ -550,36 +509,12 @@ fun VaultPasswordDialog(
                                 }
                             },
                             enabled = password.isNotBlank() && !isLoading,
-                            modifier = Modifier.weight(1.5f).height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF9A6C),
-                                disabledContainerColor = Color(0xFFFF9A6C).copy(alpha = 0.25f)
-                            )
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color(0xFF0E1A2B)
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Rounded.Verified, null,
-                                    tint = if (password.isNotBlank()) Color(0xFF0E1A2B)
-                                           else Color.White.copy(alpha = 0.3f),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "ENTRAR",
-                                    color = if (password.isNotBlank()) Color(0xFF0E1A2B)
-                                            else Color.White.copy(alpha = 0.3f),
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 13.sp
-                                )
-                            }
-                        }
+                            isLoading = isLoading,
+                            modifier = Modifier.weight(1.5f),
+                            icon = Icons.Rounded.Verified,
+                            containerColor = Color(0xFFFF9A6C),
+                            contentColor = Color(0xFF0E1A2B)
+                        )
                     }
                 }
             }

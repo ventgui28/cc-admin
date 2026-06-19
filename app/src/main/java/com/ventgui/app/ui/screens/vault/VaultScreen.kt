@@ -420,26 +420,12 @@ private fun VaultLockScreen(
 
             Spacer(modifier = Modifier.height(36.dp))
 
-            Button(
+            PremiumButton(
+                text = "Desbloquear Cofre",
                 onClick = onUnlockClick,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                modifier = Modifier.fillMaxWidth().height(54.dp)
-            ) {
-                Icon(
-                    Icons.Rounded.Fingerprint,
-                    null,
-                    tint = MidnightBlue,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    "Desbloquear Cofre",
-                    color = MidnightBlue,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp
-                )
-            }
+                icon = Icons.Rounded.Fingerprint,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

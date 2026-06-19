@@ -1,7 +1,10 @@
 package com.ventgui.app.ui.screens.team
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -161,12 +164,22 @@ fun EquipaScreen(
                         if (!isSearchExpanded) {
                             // Category Filter
                             var catMenuExpanded by remember { mutableStateOf(false) }
+                            val catInteractionSource = remember { MutableInteractionSource() }
+                            val isCatPressed by catInteractionSource.collectIsPressedAsState()
+                            val catScale by animateFloatAsState(if (isCatPressed) 0.92f else 1f, label = "catScale")
+
                             Box {
                                 Surface(
-                                    modifier = Modifier.height(36.dp),
+                                    modifier = Modifier
+                                        .height(36.dp)
+                                        .graphicsLayer {
+                                            scaleX = catScale
+                                            scaleY = catScale
+                                        },
                                     color = if (categoryFilter != null) CyberCyan else Color.White.copy(alpha = 0.05f),
                                     shape = RoundedCornerShape(18.dp),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                                    interactionSource = catInteractionSource,
                                     onClick = { catMenuExpanded = true }
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp)) {
@@ -195,12 +208,22 @@ fun EquipaScreen(
 
                             // Status Filter
                             var statusMenuExpanded by remember { mutableStateOf(false) }
+                            val statusInteractionSource = remember { MutableInteractionSource() }
+                            val isStatusPressed by statusInteractionSource.collectIsPressedAsState()
+                            val statusScale by animateFloatAsState(if (isStatusPressed) 0.92f else 1f, label = "statusScale")
+
                             Box {
                                 Surface(
-                                    modifier = Modifier.height(36.dp),
+                                    modifier = Modifier
+                                        .height(36.dp)
+                                        .graphicsLayer {
+                                            scaleX = statusScale
+                                            scaleY = statusScale
+                                        },
                                     color = if (statusFilter != null) CyberCyan else Color.White.copy(alpha = 0.05f),
                                     shape = RoundedCornerShape(18.dp),
                                     border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+                                    interactionSource = statusInteractionSource,
                                     onClick = { statusMenuExpanded = true }
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp)) {
@@ -276,23 +299,35 @@ fun EquipaScreen(
             })
         }
 
-        // Delete Confirmation Dialog
         if (athleteToDelete != null) {
             AlertDialog(
                 onDismissRequest = { athleteToDelete = null },
-                containerColor = Color(0xFF001A33),
-                title = { Text(stringResource(R.string.team_delete_athlete_title), color = Color.White) },
+                shape = RoundedCornerShape(24.dp),
+                containerColor = MidnightBlue,
+                modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp)),
+                title = { Text(stringResource(R.string.team_delete_athlete_title), color = Color.White, fontWeight = FontWeight.Black) },
                 text = { Text("Tens a certeza que pretendes eliminar este atleta? Esta ação é irreversível.", color = Color.White.copy(alpha = 0.7f)) },
                 confirmButton = {
-                    Button(onClick = {
-                        viewModel.deleteAthlete(athleteToDelete!!) { success ->
-                            if (success) {
-                                athleteToDelete = null
+                    PremiumButton(
+                        text = "ELIMINAR",
+                        onClick = {
+                            viewModel.deleteAthlete(athleteToDelete!!) { success ->
+                                if (success) {
+                                    athleteToDelete = null
+                                }
                             }
-                        }
-                    }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252))) { Text("ELIMINAR", fontWeight = FontWeight.Bold) }
+                        },
+                        containerColor = Color(0xFFFF5252),
+                        contentColor = Color.White
+                    )
                 },
-                dismissButton = { TextButton(onClick = { athleteToDelete = null }) { Text("CANCELAR", color = Color.White.copy(alpha = 0.6f)) } }
+                dismissButton = {
+                    PremiumButton(
+                        text = "CANCELAR",
+                        onClick = { athleteToDelete = null },
+                        variant = "outline"
+                    )
+                }
             )
         }
     }

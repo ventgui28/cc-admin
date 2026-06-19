@@ -35,10 +35,9 @@ fun AthleteCardElite(
 
     Box {
         HyperGlassCard(
-            modifier = Modifier.fillMaxWidth().combinedClickable(
-                onClick = onClick,
-                onLongClick = { showMenu = true }
-            ),
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onClick,
+            onLongClick = { showMenu = true },
             borderColor = null,
             borderAlpha = 0.15f
         ) {
@@ -133,9 +132,9 @@ fun AthleteCardElite(
 @Composable
 fun AthleteCardPremium(athlete: Athlete, isSelected: Boolean, onLongClick: () -> Unit, onClick: () -> Unit) {
     HyperGlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        onLongClick = onLongClick,
         color = if (isSelected) CyberCyan else Color.White
     ) {
         Row(
