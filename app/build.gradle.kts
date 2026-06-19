@@ -1,4 +1,4 @@
-import java.util.Properties
+﻿import java.util.Properties
 import java.io.FileInputStream
 
 plugins {
@@ -17,8 +17,8 @@ android {
         applicationId = "com.ventgui.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 60
-        versionName = "5.44"
+        versionCode = 61
+        versionName = "5.45"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
