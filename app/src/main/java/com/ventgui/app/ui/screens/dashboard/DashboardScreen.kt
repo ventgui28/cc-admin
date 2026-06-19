@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.*
@@ -22,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,6 +75,16 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
+    val infiniteTransition = rememberInfiniteTransition(label = "weatherPulse")
+    val weatherScale by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "weatherScale"
+    )
     val currentUser = SupabaseClient.client.auth.currentUserOrNull()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -182,7 +195,17 @@ fun DashboardScreen(
                         val isRainy = weatherDescResId == R.string.dashboard_weather_rainy || 
                                       weatherDescResId == R.string.dashboard_weather_drizzle || 
                                       weatherDescResId == R.string.dashboard_weather_stormy
-                        Icon(if (isRainy) Icons.Rounded.CloudQueue else Icons.Rounded.Cloud, null, tint = Color.White, modifier = Modifier.size(24.dp))
+                        Icon(
+                            imageVector = if (isRainy) Icons.Rounded.CloudQueue else Icons.Rounded.Cloud,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(24.dp)
+                                .graphicsLayer {
+                                    scaleX = weatherScale
+                                    scaleY = weatherScale
+                                }
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(temp, color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp)
@@ -203,11 +226,23 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val teamInteractionSource = remember { MutableInteractionSource() }
+                        val isTeamPressed by teamInteractionSource.collectIsPressedAsState()
+                        val teamScale by animateFloatAsState(if (isTeamPressed) 0.92f else 1f, label = "teamScale")
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { onNavigateToSection(AppDestinations.TEAM, null) }
+                                .graphicsLayer {
+                                    scaleX = teamScale
+                                    scaleY = teamScale
+                                }
+                                .clickable(
+                                    interactionSource = teamInteractionSource,
+                                    indication = null,
+                                    onClick = { onNavigateToSection(AppDestinations.TEAM, null) }
+                                )
                         ) {
                             Icon(Icons.Rounded.Groups, null, tint = CyberCyan, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.height(6.dp))
@@ -215,11 +250,24 @@ fun DashboardScreen(
                             Text("ATLETAS", color = Color.White.copy(alpha = 0.4f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                         }
                         Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.08f)))
+
+                        val racesInteractionSource = remember { MutableInteractionSource() }
+                        val isRacesPressed by racesInteractionSource.collectIsPressedAsState()
+                        val racesScale by animateFloatAsState(if (isRacesPressed) 0.92f else 1f, label = "racesScale")
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { onNavigateToSection(AppDestinations.RACES, null) }
+                                .graphicsLayer {
+                                    scaleX = racesScale
+                                    scaleY = racesScale
+                                }
+                                .clickable(
+                                    interactionSource = racesInteractionSource,
+                                    indication = null,
+                                    onClick = { onNavigateToSection(AppDestinations.RACES, null) }
+                                )
                         ) {
                             Icon(Icons.Rounded.DirectionsBike, null, tint = NeonEmerald, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.height(6.dp))
@@ -227,11 +275,24 @@ fun DashboardScreen(
                             Text("PROVAS", color = Color.White.copy(alpha = 0.4f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                         }
                         Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.08f)))
+
+                        val podiumsInteractionSource = remember { MutableInteractionSource() }
+                        val isPodiumsPressed by podiumsInteractionSource.collectIsPressedAsState()
+                        val podiumsScale by animateFloatAsState(if (isPodiumsPressed) 0.92f else 1f, label = "podiumsScale")
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { showPodiumsPopup = true }
+                                .graphicsLayer {
+                                    scaleX = podiumsScale
+                                    scaleY = podiumsScale
+                                }
+                                .clickable(
+                                    interactionSource = podiumsInteractionSource,
+                                    indication = null,
+                                    onClick = { showPodiumsPopup = true }
+                                )
                         ) {
                             Icon(Icons.Rounded.EmojiEvents, null, tint = VividAmber, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.height(6.dp))
@@ -239,11 +300,24 @@ fun DashboardScreen(
                             Text("PÓDIOS", color = Color.White.copy(alpha = 0.4f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                         }
                         Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.08f)))
+
+                        val victoriesInteractionSource = remember { MutableInteractionSource() }
+                        val isVictoriesPressed by victoriesInteractionSource.collectIsPressedAsState()
+                        val victoriesScale by animateFloatAsState(if (isVictoriesPressed) 0.92f else 1f, label = "victoriesScale")
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { showVictoriesPopup = true }
+                                .graphicsLayer {
+                                    scaleX = victoriesScale
+                                    scaleY = victoriesScale
+                                }
+                                .clickable(
+                                    interactionSource = victoriesInteractionSource,
+                                    indication = null,
+                                    onClick = { showVictoriesPopup = true }
+                                )
                         ) {
                             Icon(Icons.Rounded.WorkspacePremium, null, tint = Color(0xFF00E676), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.height(6.dp))

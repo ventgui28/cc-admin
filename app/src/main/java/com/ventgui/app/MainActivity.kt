@@ -7,7 +7,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
@@ -220,16 +221,38 @@ fun MainApp(
                         navItems.forEach { destination ->
                             val isSelected = currentDestination == destination
                             
+                            // Animate selection transitions
+                            val backgroundAlpha by animateFloatAsState(
+                                targetValue = if (isSelected) 0.12f else 0.0f,
+                                animationSpec = tween(durationMillis = 300),
+                                label = "navBgAlpha"
+                            )
+                            val borderAlpha by animateFloatAsState(
+                                targetValue = if (isSelected) 0.4f else 0.0f,
+                                animationSpec = tween(durationMillis = 300),
+                                label = "navBorderAlpha"
+                            )
+                            val iconScale by animateFloatAsState(
+                                targetValue = if (isSelected) 1.15f else 1.0f,
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                                label = "navIconScale"
+                            )
+                            val textTranslation by animateDpAsState(
+                                targetValue = if (isSelected) 6.dp else 0.dp,
+                                animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
+                                label = "navTextTranslation"
+                            )
+                            
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) CantanhedeTheme.colors.cyberCyan.copy(alpha = 0.1f) else Color.Transparent)
+                                    .height(52.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(CantanhedeTheme.colors.cyberCyan.copy(alpha = backgroundAlpha))
                                     .border(
-                                        width = if (isSelected) 1.dp else 0.dp,
-                                        color = if (isSelected) CantanhedeTheme.colors.cyberCyan.copy(alpha = 0.4f) else Color.Transparent,
-                                        shape = RoundedCornerShape(12.dp)
+                                        width = if (isSelected || borderAlpha > 0.01f) 1.dp else 0.dp,
+                                        color = CantanhedeTheme.colors.cyberCyan.copy(alpha = borderAlpha),
+                                        shape = RoundedCornerShape(14.dp)
                                     )
                                     .clickable {
                                         currentDestination = destination
@@ -242,17 +265,23 @@ fun MainApp(
                                     imageVector = destination.icon,
                                     contentDescription = stringResource(destination.labelResId),
                                     tint = if (isSelected) CantanhedeTheme.colors.cyberCyan else Color.White.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .graphicsLayer {
+                                            scaleX = iconScale
+                                            scaleY = iconScale
+                                        }
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     text = stringResource(destination.labelResId),
                                     color = if (isSelected) CantanhedeTheme.colors.cyberCyan else Color.White.copy(alpha = 0.7f),
                                     fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold,
+                                    modifier = Modifier.offset(x = textTranslation)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
                     }
                 }

@@ -1,6 +1,8 @@
 package com.ventgui.app.ui.screens.onboarding
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -33,6 +35,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
     val scope = rememberCoroutineScope()
+    
+    val infiniteTransition = rememberInfiniteTransition(label = "onboarding_float")
+    val translationY by infiniteTransition.animateFloat(
+        initialValue = -8f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatAnim"
+    )
+    val glowScale by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowScale"
+    )
     val sessionStatus by SupabaseClient.client.auth.sessionStatus.collectAsStateWithLifecycle()
     val user = (sessionStatus as? io.github.jan.supabase.auth.status.SessionStatus.Authenticated)?.session?.user
     
@@ -125,13 +147,21 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                             Box(
                                 modifier = Modifier
                                     .size(160.dp)
-                                    .background(Brush.radialGradient(colors = listOf(slide.color.copy(alpha = 0.15f), Color.Transparent)))
+                                    .graphicsLayer {
+                                        scaleX = glowScale
+                                        scaleY = glowScale
+                                    }
+                                    .background(Brush.radialGradient(colors = listOf(slide.color.copy(alpha = 0.2f), Color.Transparent)))
                             )
                             Icon(
                                 slide.icon,
                                 contentDescription = null,
                                 tint = slide.color,
-                                modifier = Modifier.size(100.dp)
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .graphicsLayer {
+                                        this.translationY = translationY
+                                    }
                             )
                         }
                         

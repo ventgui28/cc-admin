@@ -70,6 +70,7 @@ fun PremiumMeshBackground() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HyperGlassCard(
     modifier: Modifier = Modifier,
@@ -78,6 +79,8 @@ fun HyperGlassCard(
     cornerRadius: Int = 24,
     borderColor: Color? = null,
     borderAlpha: Float = 0.15f,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
     val backgroundBrush = if (variant == "glass") {
@@ -105,8 +108,42 @@ fun HyperGlassCard(
         )
     )
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (onClick != null && isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "cardScale"
+    )
+
+    val clickableModifier = if (onClick != null) {
+        if (onLongClick != null) {
+            Modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+        } else {
+            Modifier.clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
+        }
+    } else {
+        Modifier
+    }
+
     Box(
         modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .shadow(
                 elevation = if (variant == "solid") 20.dp else 0.dp,
                 shape = RoundedCornerShape(cornerRadius.dp),
@@ -114,6 +151,7 @@ fun HyperGlassCard(
                 spotColor = Color.Transparent
             )
             .clip(RoundedCornerShape(cornerRadius.dp))
+            .then(clickableModifier)
             .background(backgroundBrush)
             .border(
                 width = 1.dp,

@@ -10,11 +10,11 @@ val BrandDark = Color(0xFF0A192F) // Azul Marinho muito escuro para o modo dark
 val BrandSurface = Color(0xFF112240)
 
 // Dark Theme Palette
-val PrimaryDark = BrandLightBlue
-val SecondaryDark = BrandBlue
-val TertiaryDark = Color(0xFF64B5F6)
-val BackgroundDark = BrandDark
-val SurfaceDark = BrandSurface
+val PrimaryDark = Color(0xFF80D8FF) // CyberCyan
+val SecondaryDark = Color(0xFF007BFF) // ElectricBlue
+val TertiaryDark = Color(0xFF00E676) // NeonEmerald
+val BackgroundDark = Color(0xFF000B14) // DeepNavy
+val SurfaceDark = Color(0xFF001220) // MidnightBlue
 
 // Light Theme Palette
 val PrimaryLight = BrandBlue

@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -53,6 +54,26 @@ fun LoginScreen(
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
     var rememberMe by rememberSaveable { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
+    
+    val infiniteTransition = rememberInfiniteTransition(label = "bikeGlow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.15f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+    val bikeScale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bikeScale"
+    )
     
     var visible by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
@@ -107,16 +128,21 @@ fun LoginScreen(
                     Box(
                         modifier = Modifier
                             .size(100.dp)
-                            .shadow(32.dp, RoundedCornerShape(32.dp), spotColor = CyberCyan.copy(alpha = 0.3f))
+                            .shadow(32.dp, RoundedCornerShape(32.dp), spotColor = CyberCyan.copy(alpha = glowAlpha))
                             .clip(RoundedCornerShape(32.dp))
                             .background(Color.White.copy(alpha = 0.05f))
-                            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(32.dp)),
+                            .border(1.dp, CyberCyan.copy(alpha = glowAlpha), RoundedCornerShape(32.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.DirectionsBike,
                             contentDescription = null,
-                            modifier = Modifier.size(56.dp),
+                            modifier = Modifier
+                                .size(56.dp)
+                                .graphicsLayer {
+                                    scaleX = bikeScale
+                                    scaleY = bikeScale
+                                },
                             tint = Color.White
                         )
                     }

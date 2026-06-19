@@ -23,9 +23,32 @@ import java.time.ZoneId
 
 @Composable
 fun CountdownUnit(value: String, unit: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
-        Text(unit, color = Color.White.copy(alpha = 0.4f), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(width = 60.dp, height = 56.dp)
+                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(14.dp))
+                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = value,
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = unit.uppercase(),
+            color = CyberCyan,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
@@ -44,8 +67,9 @@ fun LiveStatRow(icon: ImageVector, label: String, value: String, unit: String) {
 @Composable
 fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
     HyperGlassCard(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        color = color
+        modifier = Modifier.fillMaxWidth(),
+        color = color,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -66,7 +90,7 @@ fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: C
 
 @Composable
 fun StatCard(label: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    HyperGlassCard(modifier = modifier.height(160.dp).clickable(onClick = onClick), color = color) {
+    HyperGlassCard(modifier = modifier.height(160.dp), color = color, onClick = onClick) {
         // Subtle Radial Glow
         Box(modifier = Modifier.size(120.dp).align(Alignment.Center).background(Brush.radialGradient(colors = listOf(color.copy(alpha = 0.15f), Color.Transparent))))
 
@@ -99,9 +123,9 @@ fun ActivityItem(title: String, date: String, category: String, status: String, 
     HyperGlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable(onClick = onClick),
-        color = statusColor
+            .padding(vertical = 4.dp),
+        color = statusColor,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
