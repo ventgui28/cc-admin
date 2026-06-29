@@ -11,5 +11,10 @@ data class Athlete(
     val birth_date: String? = null,
     val license_number: String? = null,
     val phone: String? = null,
-    val status: String = "active"
+    val status: String = "active",
+    val encarregado_educacao_nome: String? = null,
+    val encarregado_educacao_contacto: String? = null,
+    val termo_responsabilidade_assinado: Boolean? = false,
+    val termo_responsabilidade_url: String? = null,
+    val emd_validade: String? = null
 ) : java.io.Serializable
