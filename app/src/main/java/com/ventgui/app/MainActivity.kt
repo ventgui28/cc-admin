@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ventgui.app.data.network.SupabaseClient
+import kotlinx.coroutines.flow.MutableStateFlow
 import com.ventgui.app.data.utils.UpdateManager
 import com.ventgui.app.data.utils.UpdateState
 import com.ventgui.app.ui.components.UpdateDialog
@@ -80,6 +81,10 @@ enum class AppDestinations(val labelResId: Int, val icon: ImageVector) {
     ATHLETE_DETAILS(R.string.nav_athlete_details, Icons.Rounded.Person)
 }
 
+object DeeplinkManager {
+    val pendingDestination = MutableStateFlow<Pair<AppDestinations, String?>?>(null)
+}
+
 class MainActivity : FragmentActivity() {
     private var isFirstTime = mutableStateOf(false)
 
@@ -107,6 +112,24 @@ class MainActivity : FragmentActivity() {
         if (data.contains("type=signup") || intent.data?.fragment?.contains("type=signup") == true) {
             isFirstTime.value = true
         }
+
+        intent.data?.let { uri ->
+            if (uri.scheme == "cantanhedehub") {
+                val host = uri.host
+                val action = uri.getQueryParameter("action")
+                val destination = when (host) {
+                    "dashboard" -> AppDestinations.DASHBOARD
+                    "races" -> AppDestinations.RACES
+                    "content" -> AppDestinations.CONTENT_FACTORY
+                    "team" -> AppDestinations.TEAM
+                    "profile" -> AppDestinations.PROFILE
+                    else -> null
+                }
+                destination?.let {
+                    DeeplinkManager.pendingDestination.value = Pair(it, action)
+                }
+            }
+        }
     }
 }
 
@@ -131,6 +154,17 @@ fun MainApp(
     var isNavBarVisible by rememberSaveable { mutableStateOf(true) }
     var isFirstTime by isFirstTimeState
     var pendingAction by rememberSaveable { mutableStateOf<String?>(null) }
+    
+    val pendingDest by DeeplinkManager.pendingDestination.collectAsState()
+    LaunchedEffect(pendingDest) {
+        pendingDest?.let { (dest, action) ->
+            currentDestination = dest
+            if (action != null) {
+                pendingAction = action
+            }
+            DeeplinkManager.pendingDestination.value = null
+        }
+    }
     
     val configuration = LocalConfiguration.current
 
@@ -209,10 +243,10 @@ fun MainApp(
                             AppDestinations.DASHBOARD,
                             AppDestinations.TEAM,
                             AppDestinations.RACES,
+                            AppDestinations.REPORTS,
                             AppDestinations.GALLERY,
                             AppDestinations.VAULT,
                             AppDestinations.CONTENT_FACTORY,
-                            AppDestinations.REPORTS,
                             AppDestinations.SPONSORS,
                             AppDestinations.PROFILE,
                             AppDestinations.UPDATES
