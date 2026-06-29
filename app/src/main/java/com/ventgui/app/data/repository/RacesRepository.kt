@@ -2,6 +2,7 @@ package com.ventgui.app.data.repository
 
 import com.ventgui.app.data.model.Athlete
 import com.ventgui.app.data.model.Race
+import com.ventgui.app.data.model.RaceSubStage
 import com.ventgui.app.data.model.RaceResult
 import com.ventgui.app.data.model.RaceResultUpdate
 import com.ventgui.app.data.network.SupabaseClient
@@ -14,9 +15,17 @@ import java.time.Instant
 class RacesRepository {
 
     suspend fun getRaces(): List<Race> = withContext(Dispatchers.IO) {
-        SupabaseClient.client.postgrest.from("races").select()
+        val races = SupabaseClient.client.postgrest.from("races").select()
             .decodeList<Race>()
-            .sortedByDescending { it.date }
+        try {
+            val subStages = SupabaseClient.client.postgrest.from("race_sub_stages").select()
+                .decodeList<RaceSubStage>()
+            races.map { race ->
+                race.copy(sub_stages = subStages.filter { it.race_id == race.id })
+            }.sortedByDescending { it.date }
+        } catch (e: Exception) {
+            races.sortedByDescending { it.date }
+        }
     }
 
     suspend fun getAthletes(): List<Athlete> = withContext(Dispatchers.IO) {
@@ -40,6 +49,12 @@ class RacesRepository {
             .insert(race) { select() }
             .decodeSingle<Race>()
         
+        val subStages = race.sub_stages
+        if (!subStages.isNullOrEmpty()) {
+            val stagesToInsert = subStages.map { it.copy(race_id = createdRace.id!!) }
+            SupabaseClient.client.postgrest.from("race_sub_stages").insert(stagesToInsert)
+        }
+        
         val results = athleteIds.map { athleteId ->
             RaceResult(race_id = createdRace.id!!, athlete_id = athleteId, position = null, time = null)
         }
@@ -60,11 +75,31 @@ class RacesRepository {
             filter { eq("id", race.id!!) }
         }
         
-        SupabaseClient.client.postgrest.from("race_results").delete {
-            filter { eq("race_id", race.id!!) }
+        // Sincronizar sub-provas (deletar existentes e re-inserir)
+        try {
+            SupabaseClient.client.postgrest.from("race_sub_stages").delete {
+                filter { eq("race_id", race.id!!) }
+            }
+            val subStages = race.sub_stages
+            if (!subStages.isNullOrEmpty()) {
+                val stagesToInsert = subStages.map { it.copy(race_id = race.id!!) }
+                SupabaseClient.client.postgrest.from("race_sub_stages").insert(stagesToInsert)
+            }
+        } catch (e: Exception) {
+            // Ignorar falhas ou logar
         }
         
-        val results = athleteIds.map { athleteId ->
+        val existingResults = getRaceResults(race.id!!)
+        val existingAthleteIds = existingResults.map { it.athlete_id }.toSet()
+        
+        val toAdd = athleteIds - existingAthleteIds
+        val toRemove = existingAthleteIds - athleteIds
+        
+        if (toRemove.isNotEmpty()) {
+            deleteRaceResults(race.id!!, toRemove.toList())
+        }
+        
+        val results = toAdd.map { athleteId ->
             RaceResult(race_id = race.id!!, athlete_id = athleteId, position = null, time = null)
         }
         if (results.isNotEmpty()) {
@@ -93,6 +128,12 @@ class RacesRepository {
                 eq("race_id", raceId)
                 eq("athlete_id", athleteId)
             }
+        }
+    }
+
+    suspend fun upsertRaceResults(results: List<RaceResult>) = withContext(Dispatchers.IO) {
+        if (results.isNotEmpty()) {
+            SupabaseClient.client.postgrest.from("race_results").upsert(results)
         }
     }
 

@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".CantanhedeApp"
@@ -48,6 +50,44 @@
                 <data android:scheme="cantanhedehub" />
             </intent-filter>
         </activity>
+        <!-- Countdown Widget -->
+        <receiver
+            android:name=".widgets.CountdownWidgetReceiver"
+            android:exported="false"
+            android:label="Countdown Widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/countdown_widget_info" />
+        </receiver>
+
+        <!-- Stats Widget -->
+        <receiver
+            android:name=".widgets.StatsWidgetReceiver"
+            android:exported="false"
+            android:label="Estatísticas Widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/stats_widget_info" />
+        </receiver>
+
+        <!-- Quick Actions Widget -->
+        <receiver
+            android:name=".widgets.QuickActionsWidgetReceiver"
+            android:exported="false"
+            android:label="Atalhos Rápidos Widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_actions_widget_info" />
+        </receiver>
     </application>
 
 </manifest>
