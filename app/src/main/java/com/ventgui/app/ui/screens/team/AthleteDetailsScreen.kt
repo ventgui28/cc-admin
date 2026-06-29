@@ -26,6 +26,7 @@ import com.ventgui.app.data.model.Athlete
 import com.ventgui.app.data.model.JoinedRaceResult
 import com.ventgui.app.data.model.Race
 import com.ventgui.app.ui.components.*
+import com.ventgui.app.data.utils.PdfReportGenerator
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.launch
@@ -170,8 +171,23 @@ fun AthleteDetailsScreen(
                             }
                         }
 
-                        // Placeholder
-                        Box(modifier = Modifier.size(44.dp))
+                        // Botão de Exportação de Ficha de Emergência em PDF
+                        val context = LocalContext.current
+                        IconButton(
+                            onClick = {
+                                PdfReportGenerator.generateAndShareEmergencyPdf(context, athlete)
+                            },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.White.copy(alpha = 0.05f), CircleShape)
+                                .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.MedicalServices,
+                                contentDescription = "Exportar Ficha de Emergência",
+                                tint = CyberCyan
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(28.dp))

@@ -20,6 +20,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDate
 import android.content.ContentValues
+import android.graphics.RectF
+import com.ventgui.app.ui.screens.team.checkEmdStatus
+import java.time.format.DateTimeFormatter
 
 object PdfReportGenerator {
     fun generateAndShareReport(
@@ -345,6 +348,319 @@ object PdfReportGenerator {
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(context, "Erro ao guardar PDF: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun generateAndShareEmergencyPdf(context: Context, athlete: Athlete) {
+        val pdfDocument = PdfDocument()
+        // Página A4 padrão (595 x 842 pontos a 72 DPI)
+        val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+        val page = pdfDocument.startPage(pageInfo)
+        val canvas = page.canvas
+        
+        // Pincéis de Desenho
+        val bgPaint = Paint().apply {
+            color = 0xFFF5F7FA.toInt() // Cinza claro de fundo médico
+            style = Paint.Style.FILL
+        }
+        val headerPaint = Paint().apply {
+            color = 0xFF001E35.toInt() // Midnight Blue
+            style = Paint.Style.FILL
+        }
+        val accentPaint = Paint().apply {
+            color = 0xFFFF5252.toInt() // Vermelho Coral de Emergência Médica
+            style = Paint.Style.FILL
+        }
+        val whitePaint = Paint().apply {
+            color = 0xFFFFFFFF.toInt()
+            style = Paint.Style.FILL
+        }
+        val textPaint = Paint().apply {
+            color = 0xFF1A202C.toInt() // Cinza escuro para texto principal
+            textSize = 12f
+            isAntiAlias = true
+        }
+        val borderPaint = Paint().apply {
+            color = 0xFFE2E8F0.toInt()
+            style = Paint.Style.STROKE
+            strokeWidth = 1f
+        }
+
+        // Desenhar fundo da folha
+        canvas.drawRect(0f, 0f, 595f, 842f, bgPaint)
+
+        // 1. Cabeçalho Principal (Midnight Blue)
+        canvas.drawRect(0f, 0f, 595f, 130f, headerPaint)
+
+        // Faixa de destaque de emergência (Vermelho Coral à esquerda)
+        canvas.drawRect(0f, 0f, 15f, 130f, accentPaint)
+
+        // Títulos do Cabeçalho
+        textPaint.apply {
+            color = 0xFFFFFFFF.toInt()
+            textSize = 20f
+            isFakeBoldText = true
+        }
+        canvas.drawText("FICHA DE EMERGÊNCIA MÉDICA", 40f, 55f, textPaint)
+
+        textPaint.apply {
+            color = 0xFF00E5FF.toInt() // Cyber Cyan
+            textSize = 12f
+            isFakeBoldText = true
+        }
+        canvas.drawText("CANTANHEDE CYCLING HUB", 40f, 80f, textPaint)
+
+        textPaint.apply {
+            color = 0xFFA0AEC0.toInt()
+            textSize = 10f
+            isFakeBoldText = false
+        }
+        canvas.drawText("Escola de Ciclismo / Clube Técnico UVP-FPC", 40f, 98f, textPaint)
+
+        // 2. Foto do Atleta ou Placeholder de Ciclista
+        // Caixa da Foto
+        val photoRect = RectF(445f, 150f, 555f, 260f)
+        canvas.drawRoundRect(photoRect, 16f, 16f, whitePaint)
+        canvas.drawRoundRect(photoRect, 16f, 16f, borderPaint)
+
+        // Desenhar ícone de utilizador genérico no interior
+        val iconPaint = Paint().apply {
+            color = 0xFFCBD5E0.toInt()
+            style = Paint.Style.FILL
+            isAntiAlias = true
+        }
+        // Cabeça
+        canvas.drawCircle(500f, 190f, 18f, iconPaint)
+        // Corpo (arco de elipse)
+        val bodyRect = RectF(475f, 215f, 525f, 260f)
+        canvas.drawArc(bodyRect, 180f, 180f, true, iconPaint)
+
+        // Texto do Placeholder
+        textPaint.apply {
+            color = 0xFF718096.toInt()
+            textSize = 8f
+            isFakeBoldText = true
+        }
+        canvas.drawText("FOTO PERFIL", 472f, 250f, textPaint)
+
+        // 3. Dados Principais do Atleta (Esquerda)
+        var y = 180f
+        textPaint.apply {
+            color = 0xFF1A202C.toInt()
+            textSize = 18f
+            isFakeBoldText = true
+        }
+        canvas.drawText(athlete.name.uppercase(), 40f, y, textPaint)
+
+        y += 25f
+        textPaint.apply {
+            color = 0xFF718096.toInt()
+            textSize = 12f
+            isFakeBoldText = false
+        }
+        val escalao = athlete.category.uppercase()
+        val licenca = if (athlete.license_number.isNullOrBlank()) "NÃO FEDERADO" else "L.: ${athlete.license_number}"
+        canvas.drawText("$escalao  •  $licenca", 40f, y, textPaint)
+
+        y += 20f
+        val birthDate = athlete.birth_date ?: "-"
+        val tlf = athlete.phone ?: "Não Registado"
+        canvas.drawText("Data Nasc.: $birthDate  •  Tlm Atleta: $tlf", 40f, y, textPaint)
+
+        // 4. SECÇÃO MÉDICA E REGULAMENTAR (Sinalização a Vermelho)
+        y = 290f
+        // Separador Visual
+        accentPaint.color = 0xFFFF5252.toInt()
+        canvas.drawRoundRect(RectF(40f, y, 70f, y + 4f), 2f, 2f, accentPaint)
+        
+        textPaint.apply {
+            color = 0xFF001E35.toInt()
+            textSize = 14f
+            isFakeBoldText = true
+        }
+        canvas.drawText("INFORMAÇÕES MÉDICAS CRÍTICAS", 80f, y + 8f, textPaint)
+
+        y += 25f
+        // Caixa Médica
+        val medCardRect = RectF(40f, y, 555f, y + 120f)
+        canvas.drawRoundRect(medCardRect, 16f, 16f, whitePaint)
+        canvas.drawRoundRect(medCardRect, 16f, 16f, borderPaint)
+
+        // Linha interna de alerta vertical (Vermelho à esquerda)
+        val alertLinePaint = Paint().apply {
+            color = 0xFFFF5252.toInt()
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(RectF(40f, y, 46f, y + 120f), 16f, 16f, alertLinePaint)
+        canvas.drawRect(43f, y, 46f, y + 120f, alertLinePaint) // Quadrado sobreposto para cantos retos do lado de dentro
+
+        // Conteúdo da Caixa Médica
+        textPaint.textSize = 11f
+        var internalY = y + 25f
+        
+        // EMD
+        textPaint.isFakeBoldText = true
+        canvas.drawText("Exame Médico Desportivo (EMD):", 60f, internalY, textPaint)
+        textPaint.isFakeBoldText = false
+        val emdState = checkEmdStatus(athlete.emd_validade)
+        val emdLabel = when (emdState) {
+            "VALIDO" -> "VÁLIDO (Até ${athlete.emd_validade})"
+            "AVISO" -> "VAI EXPIRAR BREVEMENTE (Até ${athlete.emd_validade}) ⚠️"
+            else -> "EXPIRADO OU EM FALTA 🔴"
+        }
+        val emdColor = when (emdState) {
+            "VALIDO" -> 0xFF4CAF50.toInt()
+            "AVISO" -> 0xFFFF9800.toInt()
+            else -> 0xFFF44336.toInt()
+        }
+        val emdPaint = Paint(textPaint).apply { color = emdColor; isFakeBoldText = true }
+        canvas.drawText(emdLabel, 240f, internalY, emdPaint)
+
+        internalY += 22f
+        // Grupo Sanguíneo
+        textPaint.isFakeBoldText = true
+        canvas.drawText("Grupo Sanguíneo:", 60f, internalY, textPaint)
+        textPaint.isFakeBoldText = false
+        val gSanguineo = "Não Indicado / Pendente"
+        canvas.drawText(gSanguineo, 240f, internalY, textPaint)
+
+        internalY += 22f
+        // Termo de Responsabilidade
+        textPaint.isFakeBoldText = true
+        canvas.drawText("Termo de Responsabilidade:", 60f, internalY, textPaint)
+        textPaint.isFakeBoldText = false
+        val termoEntregue = athlete.termo_responsabilidade_assinado == true
+        val termoLabel = if (termoEntregue) "ENTREGUE E ASSINADO (Válido)" else "NÃO ENTREGUE / PENDENTE 🔴"
+        val termoPaint = Paint(textPaint).apply {
+            color = if (termoEntregue) 0xFF4CAF50.toInt() else 0xFFF44336.toInt()
+            isFakeBoldText = true
+        }
+        canvas.drawText(termoLabel, 240f, internalY, termoPaint)
+
+        internalY += 22f
+        // Contacto Principal de Emergência
+        textPaint.isFakeBoldText = true
+        canvas.drawText("Contacto de Emergência:", 60f, internalY, textPaint)
+        textPaint.isFakeBoldText = false
+        val emergencyContact = athlete.encarregado_educacao_contacto ?: athlete.phone ?: "Não Indicado"
+        val emergencyName = if (!athlete.encarregado_educacao_nome.isNullOrBlank()) " (${athlete.encarregado_educacao_nome})" else ""
+        val contactPaint = Paint(textPaint).apply { isFakeBoldText = true; color = 0xFF001E35.toInt() }
+        canvas.drawText("$emergencyContact$emergencyName", 240f, internalY, contactPaint)
+
+        // 5. CONTACTOS FAMILIARES (Encarregados de Educação)
+        y = 440f
+        accentPaint.color = 0xFF00E5FF.toInt() // Cyber Cyan
+        canvas.drawRoundRect(RectF(40f, y, 70f, y + 4f), 2f, 2f, accentPaint)
+        
+        textPaint.apply {
+            color = 0xFF001E35.toInt()
+            textSize = 14f
+            isFakeBoldText = true
+        }
+        canvas.drawText("ENCARREGADO DE EDUCAÇÃO E FAMÍLIA", 80f, y + 8f, textPaint)
+
+        y += 25f
+        val familyCardRect = RectF(40f, y, 555f, y + 75f)
+        canvas.drawRoundRect(familyCardRect, 16f, 16f, whitePaint)
+        canvas.drawRoundRect(familyCardRect, 16f, 16f, borderPaint)
+
+        // Conteúdo Familiar
+        textPaint.textSize = 11f
+        internalY = y + 25f
+        
+        textPaint.isFakeBoldText = true
+        canvas.drawText("Nome do Encarregado:", 60f, internalY, textPaint)
+        textPaint.isFakeBoldText = false
+        canvas.drawText(athlete.encarregado_educacao_nome ?: "Não Indicado", 220f, internalY, textPaint)
+
+        internalY += 22f
+        textPaint.isFakeBoldText = true
+        canvas.drawText("Telemóvel Encarregado:", 60f, internalY, textPaint)
+        textPaint.isFakeBoldText = false
+        canvas.drawText(athlete.encarregado_educacao_contacto ?: "Não Indicado", 220f, internalY, textPaint)
+
+        // 6. DECLARAÇÃO DE RESPONSABILIDADE & ASSINATURAS
+        y = 570f
+        accentPaint.color = 0xFF718096.toInt()
+        canvas.drawRoundRect(RectF(40f, y, 70f, y + 4f), 2f, 2f, accentPaint)
+        
+        textPaint.apply {
+            color = 0xFF001E35.toInt()
+            textSize = 14f
+            isFakeBoldText = true
+        }
+        canvas.drawText("VALIDAÇÃO REGULAMENTAR DA ASSOCIAÇÃO/CLUBE", 80f, y + 8f, textPaint)
+
+        y += 25f
+        val signatureCardRect = RectF(40f, y, 555f, y + 150f)
+        canvas.drawRoundRect(signatureCardRect, 16f, 16f, whitePaint)
+        canvas.drawRoundRect(signatureCardRect, 16f, 16f, borderPaint)
+
+        textPaint.apply {
+            color = 0xFF718096.toInt()
+            textSize = 10f
+            isFakeBoldText = false
+        }
+        val declarationText1 = "Declara-se que o atleta acima mencionado se encontra devidamente registado"
+        val declarationText2 = "na nossa Escola de Ciclismo. Em caso de acidente ou emergência médica no decorrer"
+        val declarationText3 = "das provas FPC, os contactos telefónicos acima descritos devem ser utilizados imediatamente."
+        canvas.drawText(declarationText1, 60f, y + 25f, textPaint)
+        canvas.drawText(declarationText2, 60f, y + 38f, textPaint)
+        canvas.drawText(declarationText3, 60f, y + 51f, textPaint)
+
+        // Linhas de assinatura
+        val sigLinePaint = Paint().apply {
+            color = 0xFFCBD5E0.toInt()
+            style = Paint.Style.STROKE
+            strokeWidth = 1f
+        }
+        canvas.drawLine(70f, y + 115f, 250f, y + 115f, sigLinePaint)
+        canvas.drawLine(340f, y + 115f, 520f, y + 115f, sigLinePaint)
+
+        textPaint.apply {
+            textSize = 8f
+            color = 0xFF718096.toInt()
+            isFakeBoldText = true
+        }
+        canvas.drawText("ASSINATURA DO DIRETOR DESPORTIVO", 88f, y + 130f, textPaint)
+        canvas.drawText("ASSINATURA DO ENCARREGADO", 368f, y + 130f, textPaint)
+
+        // 7. RODAPÉ DE SEGURANÇA E DATA
+        val footerDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        textPaint.apply {
+            textSize = 8f
+            color = 0xFF718096.toInt()
+            isFakeBoldText = false
+        }
+        canvas.drawText("Documento gerado automaticamente pelo CantanhedeHub em $footerDate.", 40f, 800f, textPaint)
+        canvas.drawText("Confidencialidade Médica Regulamentada pelo RGPD.", 40f, 812f, textPaint)
+
+        pdfDocument.finishPage(page)
+
+        // Gravação em cache interna
+        try {
+            val cachePath = File(context.cacheDir, "fichas_emergencia")
+            if (!cachePath.exists()) cachePath.mkdirs()
+            val file = File(cachePath, "Ficha_Emergencia_${athlete.name.replace(" ", "_")}.pdf")
+            
+            val fileOutputStream = FileOutputStream(file)
+            pdfDocument.writeTo(fileOutputStream)
+            fileOutputStream.close()
+            pdfDocument.close()
+
+            // Partilhar o arquivo PDF via Sharesheet
+            val contentUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            if (contentUri != null) {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, contentUri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Enviar Ficha de Emergência"))
+            }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Erro ao exportar PDF: ${e.message}", Toast.LENGTH_LONG).show()
+            pdfDocument.close()
         }
     }
 }
