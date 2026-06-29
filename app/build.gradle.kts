@@ -17,8 +17,8 @@ android {
         applicationId = "com.ventgui.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 69
-        versionName = "5.51"
+        versionCode = 70
+        versionName = "5.52"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
