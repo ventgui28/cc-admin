@@ -472,7 +472,7 @@ fun EquipaScreen(
                     ) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp)
                         ) {
                              if (isLoading) {
                                  item {
@@ -506,7 +506,7 @@ fun EquipaScreen(
                     ) {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp)
                     ) {
                         if (isLoadingStaff && staffList.isEmpty()) {
                             item {
