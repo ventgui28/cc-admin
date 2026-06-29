@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,22 @@ import kotlinx.coroutines.launch
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.window.Dialog
+
+fun checkEmdStatus(emdValidade: String?): String {
+    if (emdValidade.isNullOrBlank()) return "EXPIRADO"
+    return try {
+        val validade = java.time.LocalDate.parse(emdValidade)
+        val hoje = java.time.LocalDate.now()
+        val trintaDiasDepois = hoje.plusDays(30)
+        when {
+            validade.isBefore(hoje) -> "EXPIRADO"
+            validade.isBefore(trintaDiasDepois) -> "AVISO"
+            else -> "VALIDO"
+        }
+    } catch (e: Exception) {
+        "EXPIRADO"
+    }
+}
 
 @Composable
 fun AthleteDetailsScreen(
@@ -49,6 +66,7 @@ fun AthleteDetailsScreen(
     var results by remember { mutableStateOf<List<Pair<JoinedRaceResult, Race>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showEnlargedPhoto by remember { mutableStateOf(false) }
+    var showEquipmentDialog by remember { mutableStateOf(false) }
 
     if (showEnlargedPhoto && !athlete.photo_url.isNullOrBlank()) {
         Dialog(onDismissRequest = { showEnlargedPhoto = false }) {
@@ -210,8 +228,50 @@ fun AthleteDetailsScreen(
                             }
                         }
                     }
+                    
+                    // Banner do EMD (Exame Médico-Desportivo)
+                    val emdStatus = remember(athlete.emd_validade) { checkEmdStatus(athlete.emd_validade) }
+                    if (emdStatus == "EXPIRADO") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x22FF3B30))
+                                .border(1.dp, Color(0xFFFF3B30), RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Warning, null, tint = Color(0xFFFF3B30))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("IMPEDIDO DE CORRER", color = Color(0xFFFF3B30), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("O Exame Médico-Desportivo (EMD) expirou em ${athlete.emd_validade ?: "data desconhecida"}.", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    } else if (emdStatus == "AVISO") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x22FFCC00))
+                                .border(1.dp, Color(0xFFFFCC00), RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Info, null, tint = Color(0xFFFFCC00))
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("EMD PERTO DO FIM", color = Color(0xFFFFCC00), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("A validade do Exame Médico termina a ${athlete.emd_validade}.", color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Stats Cards Grid
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -240,6 +300,58 @@ fun AthleteDetailsScreen(
                             }
                         }
                     }
+                    
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
+                    // Cartão de Saúde & Encarregado
+                    val context = LocalContext.current
+                    HyperGlassCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text("SAÚDE & AUTORIZAÇÃO PARENTAL", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                val encarregadoNome = athlete.encarregado_educacao_nome ?: "--"
+                                AthleteDetailItem(Icons.Rounded.Person, "ENCARREGADO", encarregadoNome)
+                                val encarregadoContacto = athlete.encarregado_educacao_contacto ?: "--"
+                                AthleteDetailItem(Icons.Rounded.Phone, "CONTACTO", encarregadoContacto)
+                                val emdVal = athlete.emd_validade ?: "--"
+                                AthleteDetailItem(Icons.Rounded.Event, "VALIDADE EMD", emdVal)
+                                val termoStatus = if (athlete.termo_responsabilidade_assinado == true) "Entregue e Assinado" else "Pendente / Não Entregue"
+                                AthleteDetailItem(Icons.Rounded.Assignment, "AUTORIZAÇÃO", termoStatus)
+                            }
+                            
+                            if (athlete.termo_responsabilidade_assinado == true && !athlete.termo_responsabilidade_url.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                PremiumButton(
+                                    text = "VER TERMO DE RESPONSABILIDADE",
+                                    onClick = {
+                                        try {
+                                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(athlete.termo_responsabilidade_url))
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            android.widget.Toast.makeText(context, "Erro ao abrir o termo.", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    variant = "outline"
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Ações de Equipamento
+                    PremiumButton(
+                        text = "GERIR EQUIPAMENTO DA BIKE",
+                        onClick = {
+                            showEquipmentDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        variant = "solid"
+                    )
+                    
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text("HISTÓRICO RECENTE", color = Color.White.copy(alpha = 0.4f), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
@@ -266,6 +378,13 @@ fun AthleteDetailsScreen(
                     }
                 }
             }
+        }
+        
+        if (showEquipmentDialog) {
+            AthleteEquipmentDialog(
+                athlete = athlete,
+                onDismiss = { showEquipmentDialog = false }
+            )
         }
     }
 }

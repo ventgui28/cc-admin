@@ -48,16 +48,26 @@ class TeamViewModel(
         }
     }
 
-    fun saveAthlete(athlete: Athlete, onResult: (Boolean) -> Unit) {
+    fun handleCreateAthlete(athlete: Athlete, onResult: (Boolean) -> Unit) {
+        require(athlete.id == null) { "Para criar um atleta, o id deve ser nulo" }
         viewModelScope.launch {
             try {
-                if (athlete.id == null) {
-                    repository.insertAthlete(athlete)
-                    UserLogger.log("Adicionou o atleta ${athlete.name}", "Categoria: ${athlete.category}")
-                } else {
-                    repository.updateAthlete(athlete)
-                    UserLogger.log("Atualizou o atleta ${athlete.name}", "Categoria: ${athlete.category}")
-                }
+                repository.insertAthlete(athlete)
+                UserLogger.log("Adicionou o atleta ${athlete.name}", "Categoria: ${athlete.category}")
+                loadAthletes()
+                onResult(true)
+            } catch (e: Exception) {
+                onResult(false)
+            }
+        }
+    }
+
+    fun handleUpdateAthlete(athlete: Athlete, onResult: (Boolean) -> Unit) {
+        require(athlete.id != null) { "Para atualizar um atleta, o id não deve ser nulo" }
+        viewModelScope.launch {
+            try {
+                repository.updateAthlete(athlete)
+                UserLogger.log("Atualizou o atleta ${athlete.name}", "Categoria: ${athlete.category}")
                 loadAthletes()
                 onResult(true)
             } catch (e: Exception) {

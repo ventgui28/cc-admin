@@ -85,6 +85,7 @@ fun AthleteCardElite(
                             "active" -> NeonEmerald
                             "developing" -> CyberCyan
                             "injured" -> Color(0xFFFF5252)
+                            "inactive" -> Color.Gray
                             else -> Color.White.copy(alpha = 0.4f)
                         }
                         Box(modifier = Modifier.size(6.dp).background(statusColor, CircleShape))
@@ -93,6 +94,7 @@ fun AthleteCardElite(
                             "active" -> stringResource(R.string.team_status_active)
                             "developing" -> stringResource(R.string.team_status_developing)
                             "injured" -> stringResource(R.string.team_status_injured)
+                            "inactive" -> stringResource(R.string.team_status_inactive)
                             else -> athlete.status
                         }
                         Text(statusLabel.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
