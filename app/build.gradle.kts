@@ -17,8 +17,8 @@ android {
         applicationId = "com.ventgui.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 61
-        versionName = "5.45"
+        versionCode = 69
+        versionName = "5.51"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -94,6 +94,13 @@ dependencies {
 
     // Biometric
     implementation(libs.androidx.biometric)
+
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Glance Widgets
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
