@@ -93,7 +93,8 @@ fun ProvasScreen(
     var selectedTab by rememberSaveable { mutableStateOf("RESULTS") }
     var selectedRace by rememberSaveable(stateSaver = RaceSaver) { mutableStateOf<Race?>(null) }
     var selectedRaces by rememberSaveable { mutableStateOf(setOf<String>()) }
-    var showFormDialog by rememberSaveable { mutableStateOf(false) }
+    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
     var showFinishDialog by rememberSaveable { mutableStateOf(false) }
     var editingRace by rememberSaveable(stateSaver = RaceSaver) { mutableStateOf<Race?>(null) }
     var raceToDelete by rememberSaveable(stateSaver = RaceSaver) { mutableStateOf<Race?>(null) }
@@ -113,6 +114,26 @@ fun ProvasScreen(
     var statusFilter by rememberSaveable { mutableStateOf<String?>(null) }
     var genderFilter by rememberSaveable { mutableStateOf<String?>(null) }
     var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
+
+    var activeStaffList by remember { mutableStateOf(emptyList<com.ventgui.app.data.model.TeamStaff>()) }
+    
+    LaunchedEffect(selectedRace) {
+        if (selectedRace != null) {
+            scope.launch {
+                try {
+                    val response = SupabaseClient.client.postgrest.from("team_staff")
+                        .select {
+                            filter {
+                                eq("is_active", true)
+                            }
+                        }
+                    activeStaffList = response.decodeList<com.ventgui.app.data.model.TeamStaff>().filter {
+                        it.role.uppercase().contains("TREINADOR") || it.role.uppercase().contains("DIRETOR")
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+    }
 
     val filteredRaces = remember(races, searchQuery, categoryFilter, statusFilter, genderFilter) {
         races.filter { race ->
@@ -159,6 +180,13 @@ fun ProvasScreen(
         viewModel.loadRacesAndAthletes()
     }
 
+    LaunchedEffect(initialOpenAddDialog) {
+        if (initialOpenAddDialog) {
+            showCreateDialog = true
+            onDialogOpened()
+        }
+    }
+
     LaunchedEffect(selectedRace) {
         selectedAthleteIdsForBulkAction = emptySet()
         if (selectedRace != null) {
@@ -203,8 +231,7 @@ fun ProvasScreen(
                         showBackArrow = selectedRace != null,
                         onRightClick = if (selectedRace == null) {
                             {
-                                initialFormStep = 1
-                                showFormDialog = true 
+                                showCreateDialog = true 
                             }
                         } else null,
                         rightIcon = if (selectedRace == null) Icons.Rounded.Add else null
@@ -254,10 +281,7 @@ fun ProvasScreen(
                                             leadingIcon = Icons.Rounded.Search
                                         )
                                     } else {
-                                        Column {
-                                            Text("Calendário", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Black)
-                                            Text("Acompanha o desempenho da equipa.", color = CyberCyan, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                        }
+                                        Column {}
                                     }
                                 }
                             }
@@ -307,7 +331,8 @@ fun ProvasScreen(
                                         }
                                         
                                         val availableCategories = remember(races) {
-                                            races.map { it.category }.flatMap { it.split(", ") }.distinct().filter { it.isNotBlank() }
+                                            val dynamicCats = races.map { it.category }.flatMap { it.split(", ") }
+                                            (dynamicCats + "Pista" + "BTT" + "Estrada").distinct().filter { it.isNotBlank() }
                                         }
 
                                         DropdownMenu(
@@ -441,7 +466,7 @@ fun ProvasScreen(
                                     onEditClick = {
                                         editingRace = race
                                         initialFormStep = 1
-                                        showFormDialog = true
+                                        showEditDialog = true
                                     },
                                     onDeleteClick = {
                                         raceToDelete = race
@@ -449,7 +474,7 @@ fun ProvasScreen(
                                     onAssociateAthleteClick = {
                                         editingRace = race
                                         initialFormStep = 3
-                                        showFormDialog = true
+                                        showEditDialog = true
                                     }
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
@@ -462,6 +487,94 @@ fun ProvasScreen(
                 if (selectedTab == "NOTES") {
                     item {
                         Column(modifier = Modifier.padding(horizontal = 24.dp).padding(top = 16.dp)) {
+                            // Secção do Secretariado FPC
+                            HyperGlassCard(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+                                color = CyberCyan
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Rounded.VerifiedUser,
+                                            null,
+                                            tint = CyberCyan,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "SECRETARIADO & LEVANTAMENTO DE DORSAIS",
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Black,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = "De acordo com os regulamentos UVP-FPC, apenas Diretores Desportivos e Treinadores devidamente federados e ativos no clube estão autorizados a realizar o levantamento de dorsais e assinar termos no secretariado oficial da prova.",
+                                        color = Color.White.copy(alpha = 0.6f),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    
+                                    if (activeStaffList.isEmpty()) {
+                                        Text(
+                                            text = "⚠️ Nenhum treinador ou diretor desportivo ativo registado no staff técnico.",
+                                            color = Color(0xFFFF9800),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "STAFF AUTORIZADO A LEVANTAR DORSAIS:",
+                                            color = CyberCyan,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Black,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        activeStaffList.forEach { staff ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(4.dp)
+                                                            .background(CyberCyan, CircleShape)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = staff.name,
+                                                        color = Color.White,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                                
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(6.dp))
+                                                        .background(CyberCyan.copy(alpha = 0.1f))
+                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = staff.role.uppercase(),
+                                                        color = CyberCyan,
+                                                        fontSize = 8.sp,
+                                                        fontWeight = FontWeight.Black
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             if (!selectedRace!!.description.isNullOrBlank()) {
                                 HyperGlassCard(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
                                     Column(modifier = Modifier.padding(16.dp)) {
@@ -735,32 +848,36 @@ fun ProvasScreen(
             )
         }
 
-        if (showFormDialog) {
-            RaceFormDialog(
-                race = editingRace,
+        if (showCreateDialog) {
+            CreateRaceForm(
+                allAthletes = allAthletes,
+                onDismiss = { showCreateDialog = false },
+                onSave = { newRace, athleteIds ->
+                    val success = viewModel.handleCreateRace(newRace, athleteIds)
+                    if (success) {
+                        showCreateDialog = false
+                    }
+                    success
+                }
+            )
+        }
+
+        if (showEditDialog && editingRace != null) {
+            UpdateRaceForm(
+                race = editingRace!!,
                 allAthletes = allAthletes,
                 initialSelectedAthleteIds = initialSelectedAthleteIds,
                 initialStep = initialFormStep,
-                onDismiss = { showFormDialog = false; editingRace = null },
-                onSave = { title, date, cat, status, gender, subCats, loc, desc, selectedAthleteIds, startTime, link ->
-                    val r = Race(
-                        id = editingRace?.id,
-                        title = title,
-                        date = date,
-                        category = cat,
-                        status = status,
-                        gender = gender,
-                        sub_categories = subCats,
-                        location = if (loc.isBlank()) null else loc,
-                        description = if (desc.isBlank()) null else desc,
-                        team_classification = editingRace?.team_classification,
-                        start_time = if (startTime.isBlank()) null else startTime,
-                        link = if (link.isBlank()) null else link
-                    )
-                    val success = viewModel.saveRace(r, selectedAthleteIds)
+                onDismiss = { showEditDialog = false; editingRace = null },
+                onSave = { updatedRace, athleteIds ->
+                    val success = viewModel.handleUpdateRace(updatedRace, athleteIds)
                     if (success) {
-                        showFormDialog = false
+                        showEditDialog = false
                         editingRace = null
+                        if (selectedRace?.id == updatedRace.id) {
+                            selectedRace = updatedRace
+                            viewModel.fetchDetailsForRace(updatedRace)
+                        }
                     }
                     success
                 }
@@ -772,10 +889,13 @@ fun ProvasScreen(
                 race = selectedRace!!,
                 results = selectedRaceResults,
                 onDismiss = { showFinishDialog = false },
-                onSave = { updatedResults ->
-                    viewModel.finishRace(selectedRace!!, updatedResults) { success ->
+                onSave = { updatedResults, teamPosition ->
+                    viewModel.finishRace(selectedRace!!, updatedResults, teamPosition) { success ->
                         if (success) {
-                            selectedRace = selectedRace!!.copy(status = "Concluída")
+                            selectedRace = selectedRace!!.copy(
+                                status = "Concluída",
+                                team_classification = teamPosition
+                            )
                             showFinishDialog = false
                         }
                     }

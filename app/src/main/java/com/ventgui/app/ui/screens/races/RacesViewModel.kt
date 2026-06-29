@@ -105,15 +105,23 @@ class RacesViewModel(
         }
     }
 
-    suspend fun saveRace(race: Race, selectedAthleteIds: Set<String>): Boolean {
+    suspend fun handleCreateRace(race: Race, selectedAthleteIds: Set<String>): Boolean {
+        require(race.id == null) { "Para criar uma prova, o id deve ser nulo" }
         return try {
-            if (race.id == null) {
-                repository.createRaceWithAthletes(race, selectedAthleteIds)
-                UserLogger.log("Criou a prova ${race.title}", "Categoria: ${race.category}")
-            } else {
-                repository.updateRaceWithAthletes(race, selectedAthleteIds)
-                UserLogger.log("Atualizou a prova ${race.title}", "Categoria: ${race.category}")
-            }
+            repository.createRaceWithAthletes(race, selectedAthleteIds)
+            UserLogger.log("Criou a prova ${race.title}", "Categoria: ${race.category}")
+            loadRacesAndAthletes()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun handleUpdateRace(race: Race, selectedAthleteIds: Set<String>): Boolean {
+        require(race.id != null) { "Para atualizar uma prova, o id não deve ser nulo" }
+        return try {
+            repository.updateRaceWithAthletes(race, selectedAthleteIds)
+            UserLogger.log("Atualizou a prova ${race.title}", "Categoria: ${race.category}")
             loadRacesAndAthletes()
             true
         } catch (e: Exception) {
@@ -156,19 +164,13 @@ class RacesViewModel(
         }
     }
 
-    fun finishRace(race: Race, updatedResults: List<RaceResult>, onResult: (Boolean) -> Unit) {
+    fun finishRace(race: Race, updatedResults: List<RaceResult>, teamClassification: Int?, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             try {
-                updatedResults.forEach { result ->
-                    repository.updateRaceResult(
-                        raceId = race.id!!,
-                        athleteId = result.athlete_id,
-                        update = RaceResultUpdate(position = result.position, time = result.time)
-                    )
-                }
-                val updatedRace = race.copy(status = "Concluída")
+                repository.upsertRaceResults(updatedResults)
+                val updatedRace = race.copy(status = "Concluída", team_classification = teamClassification)
                 repository.updateRace(updatedRace)
-                UserLogger.log("Concluiu a prova ${race.title}", "Classificação registada")
+                UserLogger.log("Concluiu a prova ${race.title}", "Resultados e classificações registados")
                 loadRacesAndAthletes()
                 fetchDetailsForRace(updatedRace)
                 onResult(true)

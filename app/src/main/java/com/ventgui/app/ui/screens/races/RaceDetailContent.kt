@@ -62,8 +62,8 @@ fun RaceDetailContent(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         race.sub_categories.forEach { subCat ->
-                            val categoryPrefix = if (subCat.startsWith("BTT ")) "BTT: " else if (subCat.startsWith("Estrada ")) "Estrada: " else ""
-                            val displayName = subCat.substringAfter("BTT ").substringAfter("Estrada ")
+                            val categoryPrefix = if (subCat.startsWith("BTT ")) "BTT: " else if (subCat.startsWith("Estrada ")) "Estrada: " else if (subCat.startsWith("Pista ")) "Pista: " else ""
+                            val displayName = subCat.substringAfter("BTT ").substringAfter("Estrada ").substringAfter("Pista ")
                             Surface(
                                 color = Color.White.copy(alpha = 0.05f),
                                 shape = RoundedCornerShape(8.dp),
