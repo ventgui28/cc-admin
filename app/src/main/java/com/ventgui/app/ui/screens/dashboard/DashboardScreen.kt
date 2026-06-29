@@ -101,6 +101,7 @@ fun DashboardScreen(
     val temp = uiState.temp
     val weatherDescResId = uiState.weatherDescResId
     val isRefreshing = uiState.isRefreshing
+    val athleteAlerts = uiState.athleteAlerts
 
     var showPodiumsPopup by remember { mutableStateOf(false) }
     var showVictoriesPopup by remember { mutableStateOf(false) }
@@ -328,6 +329,13 @@ fun DashboardScreen(
                 }
             }
 
+            DashboardAlertsWidget(
+                alerts = athleteAlerts,
+                onNavigateToAthlete = { athleteId ->
+                    onNavigateToSection(AppDestinations.TEAM, athleteId)
+                }
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // --- NEXT RACE CARD ---
@@ -437,6 +445,173 @@ fun DashboardScreen(
                 onDismiss = { showVictoriesPopup = false },
                 accentColor = Color(0xFF00E676)
             )
+        }
+    }
+}
+
+@Composable
+fun DashboardAlertsWidget(
+    alerts: List<AthleteAlert>,
+    onNavigateToAthlete: (String) -> Unit
+) {
+    if (alerts.isEmpty()) {
+        HyperGlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color(0xFF00E676).copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF00E676),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "CONFORMIDADE REGULAMENTAR",
+                        color = Color(0xFF00E676),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "Todos os atletas ativos estão elegíveis para competir.",
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    } else {
+        var isExpanded by remember { mutableStateOf(false) }
+        val displayAlerts = if (isExpanded) alerts else alerts.take(3)
+        
+        HyperGlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            color = Color(0xFFFFCC00),
+            variant = "outline"
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color(0xFFFFCC00).copy(alpha = 0.1f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFFFCC00),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "ALERTAS DE ELEGIBILIDADE",
+                                color = Color(0xFFFFCC00),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = "Existem ${alerts.size} pendências regulamentares na equipa.",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    displayAlerts.forEach { alert ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.03f))
+                                .clickable { onNavigateToAthlete(alert.athleteId) }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = when (alert.alertType) {
+                                    "EMD_EXPIRADO" -> Icons.Rounded.HeartBroken
+                                    "EMD_A_EXPIRAR" -> Icons.Rounded.HourglassEmpty
+                                    "EMD_EM_FALTA" -> Icons.Rounded.EventBusy
+                                    "ENCARREGADO_EM_FALTA" -> Icons.Rounded.ContactPhone
+                                    else -> Icons.Rounded.VerifiedUser
+                                },
+                                contentDescription = null,
+                                tint = if (alert.alertType == "EMD_EXPIRADO") Color(0xFFFF3B30) else Color(0xFFFFCC00),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = alert.athleteName,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = alert.description,
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.3f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+                
+                if (alerts.size > 3) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = if (isExpanded) "MOSTRAR MENOS" else "VER MAIS (${alerts.size - 3})",
+                        color = CyberCyan,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clickable { isExpanded = !isExpanded }
+                            .padding(vertical = 4.dp, horizontal = 12.dp)
+                    )
+                }
+            }
         }
     }
 }

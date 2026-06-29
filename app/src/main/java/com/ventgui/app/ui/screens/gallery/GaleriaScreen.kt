@@ -38,10 +38,16 @@ import coil.compose.AsyncImage
 import com.ventgui.app.data.network.SupabaseClient
 import com.ventgui.app.data.model.SocialPost
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.launch
 import com.ventgui.app.ui.components.*
 import androidx.compose.ui.res.stringResource
 import com.ventgui.app.R
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -51,22 +57,19 @@ fun GaleriaScreen(
     onOpenDrawer: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf(stringResource(R.string.gallery_tab_photos), stringResource(R.string.gallery_tab_models))
-    
+    var isUploading by remember { mutableStateOf(false) }
+
     var posts by remember { mutableStateOf<List<SocialPost>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
-    
+
     // Selection States
     var selectedPostIds by remember { mutableStateOf(setOf<String>()) }
     var postToShowFull by remember { mutableStateOf<SocialPost?>(null) }
     
     val isInSelectionMode = selectedPostIds.isNotEmpty()
-
-    LaunchedEffect(isInSelectionMode) {
-        onSelectionModeChange(isInSelectionMode)
-    }
 
     val fetchPosts = {
         scope.launch {
@@ -84,7 +87,117 @@ fun GaleriaScreen(
         }
     }
 
+    LaunchedEffect(isInSelectionMode) {
+        onSelectionModeChange(isInSelectionMode)
+    }
+
     LaunchedEffect(Unit) { fetchPosts() }
+
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            scope.launch {
+                isUploading = true
+                var successCount = 0
+                var failCount = 0
+                var lastErrorMessage = ""
+                
+                val jobs = uris.map { uri ->
+                    launch {
+                        try {
+                            val mimeType = context.contentResolver.getType(uri)
+                            if (mimeType == null || !mimeType.startsWith("image/")) {
+                                failCount++
+                                lastErrorMessage = "Ficheiro não é imagem ou formato não suportado."
+                                return@launch
+                            }
+                            val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
+                            if (bytes == null) {
+                                failCount++
+                                lastErrorMessage = "Não foi possível ler os bytes do ficheiro."
+                                return@launch
+                            }
+                            
+                            val maxSize = 5 * 1024 * 1024 // 5MB
+                            if (bytes.size > maxSize) {
+                                failCount++
+                                lastErrorMessage = "Imagem excede o tamanho máximo de 5MB."
+                                return@launch
+                            }
+
+                            val timestamp = System.currentTimeMillis()
+                            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                            val formattedDate = sdf.format(java.util.Date(timestamp))
+                            val title = "Foto $formattedDate"
+                            
+                            val fileExtension = when (mimeType) {
+                                "image/png" -> "png"
+                                "image/gif" -> "gif"
+                                "image/webp" -> "webp"
+                                else -> "jpg"
+                            }
+                            val fileName = "gallery_${timestamp}_${java.util.UUID.randomUUID().toString().take(6)}.$fileExtension"
+                            
+                            SupabaseClient.client.storage.from("gallery").upload(fileName, bytes) {
+                                upsert = true
+                            }
+                            
+                            val publicUrl = SupabaseClient.client.storage.from("gallery").publicUrl(fileName)
+                            
+                            val post = SocialPost(
+                                title = title,
+                                content = "Imagem carregada na galeria.",
+                                image_url = publicUrl
+                            )
+                            SupabaseClient.client.postgrest.from("social_posts").insert(post)
+                            
+                            successCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            lastErrorMessage = e.localizedMessage ?: e.toString()
+                            failCount++
+                        }
+                    }
+                }
+                
+                jobs.forEach { it.join() }
+                
+                isUploading = false
+                
+                if (failCount == 0) {
+                    if (successCount == 1) {
+                        Toast.makeText(context, context.getString(R.string.gallery_upload_success_single), Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.gallery_upload_success, successCount), Toast.LENGTH_SHORT).show()
+                    }
+                } else if (successCount > 0) {
+                    Toast.makeText(context, context.getString(R.string.gallery_upload_partial_error, failCount, successCount), Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "${context.getString(R.string.gallery_upload_error)}\nErro: $lastErrorMessage", Toast.LENGTH_LONG).show()
+                }
+                
+                fetchPosts()
+            }
+        }
+    }
+
+    suspend fun deletePostImageFromStorage(imageUrl: String?) {
+        if (imageUrl.isNullOrBlank()) return
+        val bucketName = "gallery"
+        val keyword = "/$bucketName/"
+        val index = imageUrl.indexOf(keyword)
+        if (index != -1) {
+            val filePath = imageUrl.substring(index + keyword.length)
+            try {
+                SupabaseClient.client.storage.from(bucketName).delete(filePath)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    val tabs = listOf(stringResource(R.string.gallery_tab_photos), stringResource(R.string.gallery_tab_models))
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -193,24 +306,31 @@ fun GaleriaScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     when (selectedTab) {
-                        0 -> GalleryGridView(
-                            posts = posts.filter { !it.image_url.isNullOrBlank() },
-                            selectedIds = selectedPostIds,
-                            onLongClick = { id -> 
-                                if (!isInSelectionMode) selectedPostIds = setOf(id)
-                            },
-                            onClick = { post ->
-                                if (isInSelectionMode) {
-                                    selectedPostIds = if (selectedPostIds.contains(post.id)) {
-                                        selectedPostIds - post.id!!
-                                    } else {
-                                        selectedPostIds + post.id!!
+                        0 -> {
+                            val photos = posts.filter { !it.image_url.isNullOrBlank() }
+                            if (photos.isEmpty() && !isLoading) {
+                                EmptyGalleryState()
+                            } else {
+                                GalleryGridView(
+                                    posts = photos,
+                                    selectedIds = selectedPostIds,
+                                    onLongClick = { id -> 
+                                        if (!isInSelectionMode) selectedPostIds = setOf(id)
+                                    },
+                                    onClick = { post ->
+                                        if (isInSelectionMode) {
+                                            selectedPostIds = if (selectedPostIds.contains(post.id)) {
+                                                selectedPostIds - post.id!!
+                                            } else {
+                                                selectedPostIds + post.id!!
+                                            }
+                                        } else {
+                                            postToShowFull = post
+                                        }
                                     }
-                                } else {
-                                    postToShowFull = post
-                                }
+                                )
                             }
-                        )
+                        }
                         1 -> ModelosTextsView(posts)
                     }
                 }
@@ -253,6 +373,10 @@ fun GaleriaScreen(
                                     scope.launch {
                                         try {
                                             selectedPostIds.forEach { id ->
+                                                val post = posts.firstOrNull { it.id == id }
+                                                if (post != null && post.image_url != null) {
+                                                    deletePostImageFromStorage(post.image_url)
+                                                }
                                                 SupabaseClient.client.postgrest.from("social_posts").delete { filter { eq("id", id) } }
                                             }
                                             selectedPostIds = emptySet()
@@ -272,7 +396,63 @@ fun GaleriaScreen(
 
         // Full Image Dialog
         if (postToShowFull != null) {
-            FullImageDialog(post = postToShowFull!!, onDismiss = { postToShowFull = null })
+            FullImageDialog(
+                post = postToShowFull!!,
+                onDismiss = { postToShowFull = null },
+                onDelete = { post ->
+                    postToShowFull = null
+                    scope.launch {
+                        try {
+                            if (post.image_url != null) {
+                                deletePostImageFromStorage(post.image_url)
+                            }
+                            SupabaseClient.client.postgrest.from("social_posts").delete { filter { eq("id", post.id!!) } }
+                            fetchPosts()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            )
+        }
+
+        // FAB for uploading photos
+        AnimatedVisibility(
+            visible = selectedTab == 0 && !isInSelectionMode,
+            enter = scaleIn() + fadeIn(),
+            exit = scaleOut() + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+                .padding(bottom = 16.dp)
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    if (!isUploading) {
+                        imagePicker.launch("image/*")
+                    }
+                },
+                containerColor = CyberCyan,
+                contentColor = MidnightBlue,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(56.dp)
+                    .shadow(12.dp, CircleShape)
+            ) {
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MidnightBlue,
+                        strokeWidth = 2.5.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = stringResource(R.string.gallery_add_photo),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }

@@ -12,6 +12,13 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 
+data class AthleteAlert(
+    val athleteId: String,
+    val athleteName: String,
+    val alertType: String, // EMD_EXPIRADO, EMD_A_EXPIRAR, EMD_EM_FALTA, ENCARREGADO_EM_FALTA, TERMO_EM_FALTA
+    val description: String
+)
+
 data class DashboardUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -26,6 +33,7 @@ data class DashboardUiState(
     val victoriesList: List<DetailedResult> = emptyList(),
     val temp: String = "18°",
     val weatherDescResId: Int = R.string.dashboard_weather_cloudy,
+    val athleteAlerts: List<AthleteAlert> = emptyList(),
     val error: String? = null
 )
 
@@ -89,6 +97,70 @@ class DashboardViewModel(
                 val victoriesList = processedResults.filter { it.position == 1 }
                     .sortedByDescending { it.raceDate }
 
+                // Processar alertas de atletas (Validação Progressiva)
+                val alertsList = mutableListOf<AthleteAlert>()
+                val todayDate = java.time.LocalDate.now(ZoneId.systemDefault())
+                val limitWarningDate = todayDate.plusDays(30)
+
+                allAthletes.forEach { athlete ->
+                    val emdVal = athlete.emd_validade
+                    if (emdVal.isNullOrBlank()) {
+                        alertsList.add(
+                            AthleteAlert(
+                                athleteId = athlete.id ?: "",
+                                athleteName = athlete.name,
+                                alertType = "EMD_EM_FALTA",
+                                description = "Exame Médico (EMD) em falta."
+                            )
+                        )
+                    } else {
+                        try {
+                            val emdDate = java.time.LocalDate.parse(emdVal)
+                            if (emdDate.isBefore(todayDate)) {
+                                alertsList.add(
+                                    AthleteAlert(
+                                        athleteId = athlete.id ?: "",
+                                        athleteName = athlete.name,
+                                        alertType = "EMD_EXPIRADO",
+                                        description = "Exame Médico (EMD) expirou em $emdVal."
+                                    )
+                                )
+                            } else if (emdDate.isBefore(limitWarningDate)) {
+                                alertsList.add(
+                                    AthleteAlert(
+                                        athleteId = athlete.id ?: "",
+                                        athleteName = athlete.name,
+                                        alertType = "EMD_A_EXPIRAR",
+                                        description = "EMD expira em breve ($emdVal)."
+                                    )
+                                )
+                            }
+                        } catch (e: Exception) {}
+                    }
+
+                    if (athlete.encarregado_educacao_nome.isNullOrBlank() || athlete.encarregado_educacao_contacto.isNullOrBlank()) {
+                        alertsList.add(
+                            AthleteAlert(
+                                athleteId = athlete.id ?: "",
+                                athleteName = athlete.name,
+                                alertType = "ENCARREGADO_EM_FALTA",
+                                description = "Faltam os contactos do Encarregado."
+                            )
+                        )
+                    }
+
+                    if (athlete.termo_responsabilidade_assinado != true) {
+                        alertsList.add(
+                            AthleteAlert(
+                                athleteId = athlete.id ?: "",
+                                athleteName = athlete.name,
+                                alertType = "TERMO_EM_FALTA",
+                                description = "Falta carregar o Termo de Responsabilidade."
+                            )
+                        )
+                    }
+                }
+
                 _uiState.value = DashboardUiState(
                     isLoading = false,
                     isRefreshing = false,
@@ -102,7 +174,8 @@ class DashboardViewModel(
                     podiumsList = podiumsList,
                     victoriesList = victoriesList,
                     temp = weather.first,
-                    weatherDescResId = weather.second
+                    weatherDescResId = weather.second,
+                    athleteAlerts = alertsList
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(

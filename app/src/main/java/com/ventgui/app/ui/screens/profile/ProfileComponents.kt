@@ -22,15 +22,32 @@ import com.ventgui.app.R
 import com.ventgui.app.data.model.Profile
 import com.ventgui.app.ui.components.*
 
+import androidx.compose.ui.text.style.TextOverflow
+
 @Composable
 fun ProfileStatItem(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = CyberCyan, modifier = Modifier.size(12.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text(label, color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = label,
+                color = Color.White.copy(alpha = 0.4f),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-        Text(value, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(top = 4.dp))
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(top = 4.dp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

@@ -43,6 +43,12 @@ import android.content.Intent
 import android.net.Uri
 import io.github.jan.supabase.storage.storage
 import io.github.jan.supabase.auth.mfa.*
+import com.ventgui.app.data.utils.BirthdayWorkScheduler
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,9 +67,12 @@ fun ProfileScreen(
     var showMFASetupDialog by rememberSaveable { mutableStateOf(false) }
     var mfaFactorId by rememberSaveable { mutableStateOf<String?>(null) }
     var mfaSecret by rememberSaveable { mutableStateOf<String?>(null) }
-
     
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Configurações de hora de notificação de aniversário
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+    val schedulerTime = remember { mutableStateOf(BirthdayWorkScheduler.getScheduledTime(context)) }
     val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             scope.launch {
@@ -239,9 +248,9 @@ fun ProfileScreen(
 
                     // --- STATS ROW ---
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        ProfileStatItem(Icons.Rounded.AssignmentInd, stringResource(R.string.profile_role_label), profile?.role?.uppercase() ?: "EDITOR", Modifier.weight(1f))
-                        ProfileStatItem(Icons.Rounded.Groups, stringResource(R.string.profile_access_label), stringResource(R.string.profile_access_full), Modifier.weight(1f))
-                        ProfileStatItem(Icons.Rounded.CalendarMonth, stringResource(R.string.profile_member_since), formatDate(profile?.created_at), Modifier.weight(1.2f))
+                        ProfileStatItem(Icons.Rounded.AssignmentInd, stringResource(R.string.profile_role_label), profile?.role?.uppercase() ?: "EDITOR", Modifier.weight(0.8f))
+                        ProfileStatItem(Icons.Rounded.Groups, stringResource(R.string.profile_access_label), stringResource(R.string.profile_access_full), Modifier.weight(1.3f))
+                        ProfileStatItem(Icons.Rounded.CalendarMonth, stringResource(R.string.profile_member_since), formatDate(profile?.created_at), Modifier.weight(1.1f))
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -299,16 +308,46 @@ fun ProfileScreen(
                                 }
                             })
                             HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                            val permissionLauncher = rememberLauncherForActivityResult(
+                                contract = ActivityResultContracts.RequestPermission()
+                            ) { isGranted ->
+                                if (isGranted) {
+                                    Toast.makeText(context, "Notificações ativadas com sucesso!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Permissão de notificações negada.", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+
                             ProfileOptionItem(Icons.Rounded.Notifications, stringResource(R.string.profile_notif_title), stringResource(R.string.profile_notif_desc), onClick = { 
                                 try {
-                                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        } else {
+                                            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            }
+                                            context.startActivity(intent)
+                                        }
+                                    } else {
+                                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                        }
+                                        context.startActivity(intent)
                                     }
-                                    context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    android.widget.Toast.makeText(context, context.getString(R.string.login_success), android.widget.Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Erro ao abrir configurações.", Toast.LENGTH_SHORT).show()
                                 }
                             })
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.05f))
+                            val (hour, minute) = schedulerTime.value
+                            val formattedTime = String.format("%02d:%02d", hour, minute)
+                            ProfileOptionItem(
+                                Icons.Rounded.Schedule,
+                                "Hora das Notificações",
+                                "Notificar aniversários às $formattedTime",
+                                onClick = { showTimePickerDialog = true }
+                            )
                         }
                     }
 
@@ -457,6 +496,40 @@ fun ProfileScreen(
                         }
                     }
                 }
+            )
+        }
+
+        if (showTimePickerDialog) {
+            val state = rememberTimePickerState(
+                initialHour = schedulerTime.value.first,
+                initialMinute = schedulerTime.value.second,
+                is24Hour = true
+            )
+            AlertDialog(
+                onDismissRequest = { showTimePickerDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        BirthdayWorkScheduler.saveAndReschedule(context, state.hour, state.minute)
+                        schedulerTime.value = Pair(state.hour, state.minute)
+                        showTimePickerDialog = false
+                        Toast.makeText(context, "Hora atualizada para as " + String.format("%02d:%02d", state.hour, state.minute), Toast.LENGTH_SHORT).show()
+                    }) {
+                        Text("Confirmar", color = CyberCyan)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showTimePickerDialog = false }) {
+                        Text("Cancelar", color = Color.White.copy(alpha = 0.5f))
+                    }
+                },
+                title = { Text("Escolher Hora", color = Color.White, fontWeight = FontWeight.Bold) },
+                text = {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        TimePicker(state = state)
+                    }
+                },
+                containerColor = MidnightBlue,
+                textContentColor = Color.White
             )
         }
     }

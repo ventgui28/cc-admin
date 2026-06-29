@@ -2,6 +2,11 @@
 <resources>
     <string name="app_name">CC Admin</string>
 
+    <!-- Widgets -->
+    <string name="widget_countdown_desc">Contagem decrescente para a próxima prova</string>
+    <string name="widget_stats_desc">Estatísticas em tempo real do Cantanhede Cycling Hub</string>
+    <string name="widget_quick_actions_desc">Ações rápidas da equipa</string>
+
     <!-- Navigation -->
     <string name="nav_dashboard">Início</string>
     <string name="nav_team">Equipa</string>
@@ -260,6 +265,18 @@
     <string name="gallery_selected_count">%1$d itens selecionados</string>
     <string name="gallery_digital">Galeria Digital</string>
     <string name="gallery_social_caption">Gere o seu conteúdo social</string>
+    <string name="gallery_uploading">A carregar fotos...</string>
+    <string name="gallery_upload_success">%1$d fotos adicionadas com sucesso!</string>
+    <string name="gallery_upload_partial_error">Erro ao carregar %1$d fotos. %2$d foram adicionadas com sucesso.</string>
+    <string name="gallery_upload_error">Erro ao adicionar fotos. Tenta novamente.</string>
+    <string name="gallery_upload_too_large">Imagem demasiado grande. Máximo: 5MB.</string>
+    <string name="gallery_upload_invalid">Apenas ficheiros de imagem são permitidos.</string>
+    <string name="gallery_photo_title_prefix">Foto</string>
+    <string name="gallery_empty_title">Ainda não há fotos.</string>
+    <string name="gallery_empty_subtitle">Toca no + para adicionar a primeira!</string>
+    <string name="gallery_delete_confirm_title">Eliminar foto?</string>
+    <string name="gallery_delete_confirm_message">Esta ação é irreversível.</string>
+    <string name="gallery_upload_success_single">Foto adicionada com sucesso!</string>
 
     <!-- Studio / Estúdio -->
     <string name="studio_title">ESTÚDIO DE CONTEÚDO</string>

@@ -35,6 +35,12 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -134,7 +140,24 @@ fun ModelosTextsView(posts: List<SocialPost>) {
 }
 
 @Composable
-fun FullImageDialog(post: SocialPost, onDismiss: () -> Unit) {
+fun FullImageDialog(
+    post: SocialPost,
+    onDismiss: () -> Unit,
+    onDelete: (SocialPost) -> Unit
+) {
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+        scale = (scale * zoomChange).coerceIn(1f, 5f)
+        if (scale > 1f) {
+            offset += offsetChange
+        } else {
+            offset = androidx.compose.ui.geometry.Offset.Zero
+        }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -143,12 +166,38 @@ fun FullImageDialog(post: SocialPost, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.95f))
-                .clickable { onDismiss() }
+                .clickable(enabled = scale == 1f) { onDismiss() }
         ) {
             AsyncImage(
                 model = post.image_url,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize().padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offset.x,
+                        translationY = offset.y
+                    )
+                    .transformable(state = state)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                if (scale > 1f) {
+                                    scale = 1f
+                                    offset = androidx.compose.ui.geometry.Offset.Zero
+                                } else {
+                                    scale = 2.5f
+                                }
+                            },
+                            onTap = {
+                                if (scale == 1f) {
+                                    onDismiss()
+                                }
+                            }
+                        )
+                    },
                 contentScale = ContentScale.Fit
             )
             
@@ -164,17 +213,93 @@ fun FullImageDialog(post: SocialPost, onDismiss: () -> Unit) {
                     .padding(24.dp)
             ) {
                 Text(text = post.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = post.content, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(40.dp))
             }
 
+            // Close button (Top-Right)
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).padding(24.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(24.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
             ) {
                 Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.common_close), tint = Color.White)
             }
+
+            // Delete button (Top-Left)
+            IconButton(
+                onClick = { showDeleteConfirm = true },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(24.dp)
+                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+            ) {
+                Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.common_delete), tint = Color.Red)
+            }
+        }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text(text = stringResource(R.string.gallery_delete_confirm_title), color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text(text = stringResource(R.string.gallery_delete_confirm_message), color = Color.White.copy(alpha = 0.7f)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete(post)
+                    }
+                ) {
+                    Text(text = stringResource(R.string.common_delete), color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(text = stringResource(R.string.common_cancel), color = Color.White)
+                }
+            },
+            containerColor = MidnightBlue,
+            titleContentColor = Color.White,
+            textContentColor = Color.White
+        )
+    }
+}
+
+@Composable
+fun EmptyGalleryState() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(bottom = 100.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.PhotoCamera,
+                contentDescription = null,
+                tint = CyberCyan.copy(alpha = 0.4f),
+                modifier = Modifier.size(80.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.gallery_empty_title),
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.gallery_empty_subtitle),
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

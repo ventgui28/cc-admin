@@ -46,15 +46,21 @@ try {
 
     Write-Host "Versao encontrada: v$VersionName (Code: $VersionCode)" -ForegroundColor Green
 
-    $Increment = Read-Host "Queres incrementar o versionCode automaticamente? (s/n)"
-    if ($Increment -eq 's' -or $Increment -eq 'S') {
+    $Increment = $env:AUTO_INCREMENT
+    if ([string]::IsNullOrEmpty($Increment)) {
+        $Increment = Read-Host "Queres incrementar o versionCode automaticamente? (s/n)"
+    }
+    if ($Increment -eq 's' -or $Increment -eq 'S' -or $Increment -eq 'true') {
         $NewVersionCode = $VersionCode + 1
         Write-Host "Incrementando versionCode para $NewVersionCode..." -ForegroundColor Gray
         
         $GradleContent = $GradleContent -replace "versionCode\s*=\s*$VersionCode", "versionCode = $NewVersionCode"
         $VersionCode = $NewVersionCode
         
-        $NewVersionName = Read-Host "Introduz o novo versionName (ex: 1.1) [Enter para manter $VersionName]"
+        $NewVersionName = $env:NEW_VERSION_NAME
+        if ([string]::IsNullOrEmpty($NewVersionName) -and -not ($env:NON_INTERACTIVE -eq 'true')) {
+            $NewVersionName = Read-Host "Introduz o novo versionName (ex: 1.1) [Enter para manter $VersionName]"
+        }
         if (-not [string]::IsNullOrEmpty($NewVersionName)) {
             $GradleContent = $GradleContent -replace "versionName\s*=\s*`"$VersionName`"", "versionName = `"$NewVersionName`""
             $VersionName = $NewVersionName
@@ -127,7 +133,9 @@ try {
     Write-Host "  Versao: v$VersionName (Code: $VersionCode)" -ForegroundColor Green
     Write-Host "  Ficheiro: $DestFileName" -ForegroundColor Green
     Write-Host "============================================================" -ForegroundColor Green
-    Read-Host "Pressione Enter para fechar"
+    if (-not ($env:NON_INTERACTIVE -eq 'true')) {
+        Read-Host "Pressione Enter para fechar"
+    }
 
 } catch {
     Write-Host ""
@@ -136,6 +144,8 @@ try {
     Write-Host $_.Exception.Message -ForegroundColor Red
     Write-Host "------------------------------------------------------------" -ForegroundColor Red
     Write-Host ""
-    Read-Host "Pressione Enter para fechar o terminal..."
+    if (-not ($env:NON_INTERACTIVE -eq 'true')) {
+        Read-Host "Pressione Enter para fechar o terminal..."
+    }
     exit 1
 }
